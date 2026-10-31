@@ -251,11 +251,6 @@ a{color:inherit;}
   z-index:100; opacity:0; pointer-events:none; transition:opacity var(--dur-med) var(--ease); padding:20px;
 }
 .overlay.open{opacity:1; pointer-events:auto;}
-#tool-overlay{z-index:100;}
-#settings-overlay{z-index:100;}
-#confirm-overlay,
-#reset-overlay,
-#import-overlay{z-index:300;}
 .modal{
   background:var(--bg-elev-1); border:1px solid var(--border-med); border-radius:var(--radius-lg); box-shadow:var(--shadow-modal);
   width:100%; max-width:440px; max-height:88vh; display:flex; flex-direction:column; overflow:hidden;
@@ -375,7 +370,7 @@ a{color:inherit;}
 /* ============================================================
    TOASTS
    ============================================================ */
-#toast-stack{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:500; display:flex; flex-direction:column-reverse; gap:8px; align-items:center; pointer-events:none;}
+#toast-stack{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:200; display:flex; flex-direction:column-reverse; gap:8px; align-items:center;}
 .toast{
   display:flex; align-items:center; gap:9px; background:var(--bg-elev-1); border:1px solid var(--border-med); box-shadow:var(--shadow-modal);
   padding:10px 15px; border-radius:var(--radius-md); font-size:12.5px; font-weight:550; color:var(--text-primary);
@@ -386,6 +381,18 @@ a{color:inherit;}
 .toast.error .toast-icon{color:var(--danger);}
 @keyframes toast-in{from{opacity:0; transform:translateY(8px) scale(.96);} to{opacity:1; transform:translateY(0) scale(1);}}
 @keyframes toast-out{to{opacity:0; transform:translateY(6px) scale(.96);}}
+
+
+/* CLOUD AUTH */
+#auth-screen{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:22px;overflow:auto}
+.auth-card{width:min(100%,420px);background:var(--bg-elev-1);border:1px solid var(--border-med);border-radius:20px;padding:30px;box-shadow:var(--shadow-modal)}
+.auth-brand{display:flex;align-items:center;gap:11px;margin-bottom:25px;font-size:19px;font-weight:700}
+.auth-brand-mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(155deg,var(--emerald-400),var(--emerald-700));display:grid;place-items:center;color:#08150f;font-weight:800}
+.auth-card h1{font-size:23px;letter-spacing:-.03em;margin-bottom:6px}.auth-sub{color:var(--text-secondary);font-size:13px;margin-bottom:22px;line-height:1.5}
+.auth-field{margin-bottom:13px}.auth-field label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}.auth-field input{width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--border-med);background:var(--bg-elev-2);color:var(--text-primary);font-size:14px}
+.auth-actions{display:flex;gap:8px;margin-top:17px}.auth-actions button{flex:1;padding:11px;border:1px solid var(--border-med);border-radius:8px;font-weight:650}.auth-primary{background:var(--accent-strong);color:#08150f;border-color:transparent!important}.auth-secondary{background:transparent;color:var(--text-primary)}
+.auth-links{display:flex;justify-content:space-between;gap:12px;margin-top:16px;font-size:12px;color:var(--text-secondary)}.auth-links button{background:none;border:0;color:var(--accent);font:inherit;cursor:pointer}.auth-message{font-size:12px;line-height:1.5;margin-top:14px;color:var(--text-secondary);min-height:18px}.auth-message.error{color:var(--danger)}
+#account-signout{padding:7px 10px;border:1px solid var(--border-subtle);border-radius:8px;background:var(--bg-elev-2);color:var(--text-secondary);font-size:12px}
 
 /* ============================================================
    RESPONSIVE
@@ -411,10 +418,27 @@ a{color:inherit;}
   .tool-card{transform:none !important;}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<div id="app">
+<section id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-brand"><div class="auth-brand-mark">T</div>Toolify</div>
+    <h1 id="auth-title">Welcome back</h1>
+    <p class="auth-sub" id="auth-sub">Sign in to access your personal cloud-synced tool library.</p>
+    <form id="auth-form">
+      <div class="auth-field"><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
+      <div class="auth-field" id="auth-password-wrap"><label for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters"></div>
+      <div class="auth-field" id="auth-confirm-wrap" style="display:none"><label for="auth-confirm">Confirm password</label><input id="auth-confirm" type="password" autocomplete="new-password" minlength="6" placeholder="Repeat password"></div>
+      <div class="auth-field" id="auth-new-wrap" style="display:none"><label for="auth-new-password">New password</label><input id="auth-new-password" type="password" autocomplete="new-password" minlength="6" placeholder="New password"></div>
+      <div class="auth-actions"><button class="auth-primary" id="auth-submit" type="submit">Sign in</button></div>
+    </form>
+    <div class="auth-links"><button type="button" id="auth-toggle">Create account</button><button type="button" id="auth-forgot">Forgot password?</button></div>
+    <div class="auth-message" id="auth-message" role="status"></div>
+  </div>
+</section>
+<div id="app" style="display:none">
   <!-- ============ SIDEBAR ============ -->
   <aside id="sidebar">
     <div class="brand">
@@ -459,6 +483,7 @@ a{color:inherit;}
         <button class="search-clear" id="search-clear" aria-label="Clear search"><svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="topbar-controls">
+        <button id="account-signout" type="button" title="Sign out">Sign out</button>
         <div class="sort-wrap">
           <button class="sort-btn" id="sort-btn">
             <span id="sort-label">Newest</span>
@@ -586,6 +611,7 @@ a{color:inherit;}
     </div>
     <div class="settings-layout">
       <div class="settings-nav" id="settings-nav">
+        <button class="settings-nav-item" data-panel="account">Account</button>
         <button class="settings-nav-item" data-panel="general">General</button>
         <button class="settings-nav-item" data-panel="tools">Tools</button>
         <button class="settings-nav-item" data-panel="categories">Categories</button>
@@ -618,82 +644,54 @@ const UNCATEGORIZED_ID = "uncategorized";
 const MAX_SNAPSHOTS = 5;
 
 /* ============================================================
-   1. DATABASE LAYER (IndexedDB)
+   1. LOCAL CACHE + SUPABASE CLOUD DATABASE
    ============================================================ */
+const SUPABASE_URL = "https://ihlqghvdfunsfdnlaoks.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_roUVfR56-WA4eDay7bN_kg_g3mb2PwX";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+});
+let currentUser = null;
+let cloudSyncBusy = false;
 const DB = (function(){
   let dbInstance = null;
-
-  function open(){
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = (e) => {
-        const db = e.target.result;
-        if(!db.objectStoreNames.contains("tools")) db.createObjectStore("tools", {keyPath:"id"});
-        if(!db.objectStoreNames.contains("categories")) db.createObjectStore("categories", {keyPath:"id"});
-        if(!db.objectStoreNames.contains("settings")) db.createObjectStore("settings", {keyPath:"key"});
-        if(!db.objectStoreNames.contains("snapshots")) db.createObjectStore("snapshots", {keyPath:"id"});
-      };
-      req.onsuccess = (e) => { dbInstance = e.target.result; resolve(dbInstance); };
-      req.onerror = (e) => reject(e.target.error);
-    });
+  function open(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,DB_VERSION);req.onupgradeneeded=e=>{const db=e.target.result;for(const [n,k] of [['tools','id'],['categories','id'],['settings','key'],['snapshots','id']])if(!db.objectStoreNames.contains(n))db.createObjectStore(n,{keyPath:k});};req.onsuccess=e=>{dbInstance=e.target.result;resolve(dbInstance);};req.onerror=e=>reject(e.target.error);});}
+  function tx(n,m){return dbInstance.transaction(n,m).objectStore(n);}
+  function localGetAll(n){return new Promise((resolve,reject)=>{try{const r=tx(n,'readonly').getAll();r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>reject(r.error);}catch(e){reject(e);}});}
+  function localPut(n,v){return new Promise((resolve,reject)=>{try{const r=tx(n,'readwrite').put(v);r.onsuccess=()=>resolve(true);r.onerror=()=>reject(r.error);}catch(e){reject(e);}});}
+  function localBulkPut(n,vs){return new Promise((resolve,reject)=>{try{const st=tx(n,'readwrite');vs.forEach(v=>st.put(v));st.transaction.oncomplete=()=>resolve(true);st.transaction.onerror=()=>reject(st.transaction.error);}catch(e){reject(e);}});}
+  function localDel(n,k){return new Promise((resolve,reject)=>{try{const r=tx(n,'readwrite').delete(k);r.onsuccess=()=>resolve(true);r.onerror=()=>reject(r.error);}catch(e){reject(e);}});}
+  function localClear(n){return new Promise((resolve,reject)=>{try{const r=tx(n,'readwrite').clear();r.onsuccess=()=>resolve(true);r.onerror=()=>reject(r.error);}catch(e){reject(e);}});}
+  const tableFor={tools:'tools',categories:'categories',settings:'settings',snapshots:'snapshots'};
+  function toCloud(n,v){const base={user_id:currentUser.id};if(n==='tools')return {...base,id:v.id,name:v.name,url:v.url,category_id:v.categoryId||'uncategorized',description:v.description||'',favorite:!!v.favorite,icon_failed:!!v.iconFailed,created_at:v.createdAt||new Date().toISOString(),updated_at:v.updatedAt||new Date().toISOString()};if(n==='categories')return {...base,id:v.id,name:v.name,system:!!v.system,created_at:v.createdAt||new Date().toISOString()};if(n==='settings')return {...base,key:v.key,value:v.value??{}};return {...base,id:v.id,created_at:v.createdAt||new Date().toISOString(),data:{tools:v.tools||[],categories:v.categories||[],settings:v.settings||{}}};}
+  function fromCloud(n,v){if(n==='tools')return {id:v.id,name:v.name,url:v.url,categoryId:v.category_id,description:v.description||'',favorite:!!v.favorite,iconFailed:!!v.icon_failed,createdAt:v.created_at,updatedAt:v.updated_at};if(n==='categories')return {id:v.id,name:v.name,system:!!v.system,createdAt:v.created_at};if(n==='settings')return {key:v.key,value:v.value};return {id:v.id,createdAt:v.created_at,tools:v.data?.tools||[],categories:v.data?.categories||[],settings:v.data?.settings||{}};}
+  async function cloudUpsert(n,values){if(!currentUser||!values.length)return;const rows=values.map(v=>toCloud(n,v));const conflict=n==='settings'?'user_id,key':'user_id,id';const {error}=await supabaseClient.from(tableFor[n]).upsert(rows,{onConflict:conflict});if(error)throw error;}
+  async function cloudDelete(n,key){if(!currentUser)return;let q=supabaseClient.from(tableFor[n]).delete().eq('user_id',currentUser.id);q=q.eq(n==='settings'?'key':'id',key);const {error}=await q;if(error)throw error;}
+  async function cloudClear(n){if(!currentUser)return;const {error}=await supabaseClient.from(tableFor[n]).delete().eq('user_id',currentUser.id);if(error)throw error;}
+  async function put(n,v){await localPut(n,v);if(currentUser&&!cloudSyncBusy)await cloudUpsert(n,[v]);return true;}
+  async function bulkPut(n,vs){await localBulkPut(n,vs);if(currentUser&&!cloudSyncBusy)await cloudUpsert(n,vs);return true;}
+  async function del(n,k){await localDel(n,k);if(currentUser&&!cloudSyncBusy)await cloudDelete(n,k);return true;}
+  async function clearStore(n){await localClear(n);if(currentUser&&!cloudSyncBusy)await cloudClear(n);return true;}
+  async function syncForUser(user){
+    currentUser=user;cloudSyncBusy=true;
+    try{
+      const names=['categories','tools','settings','snapshots'];
+      const local={};for(const n of names)local[n]=await localGetAll(n);
+      const remote={};for(const n of names){const {data,error}=await supabaseClient.from(tableFor[n]).select('*').eq('user_id',user.id);if(error)throw error;remote[n]=(data||[]).map(v=>fromCloud(n,v));}
+      const hasRemote=names.some(n=>remote[n].length>0);
+      if(!hasRemote){
+        if(!local.categories.some(c=>c.id==='uncategorized'))local.categories.push({id:'uncategorized',name:'Uncategorized',system:true,createdAt:new Date().toISOString()});
+        if(local.categories.length)await cloudUpsert('categories',local.categories);
+        if(local.tools.length)await cloudUpsert('tools',local.tools);
+        if(local.settings.length)await cloudUpsert('settings',local.settings);
+        if(local.snapshots.length)await cloudUpsert('snapshots',local.snapshots);
+        for(const n of names){const {data,error}=await supabaseClient.from(tableFor[n]).select('*').eq('user_id',user.id);if(error)throw error;remote[n]=(data||[]).map(v=>fromCloud(n,v));}
+      }
+      for(const n of names){await localClear(n);if(remote[n].length)await localBulkPut(n,remote[n]);}
+    }finally{cloudSyncBusy=false;}
   }
-
-  function tx(storeName, mode){
-    return dbInstance.transaction(storeName, mode).objectStore(storeName);
-  }
-
-  function getAll(storeName){
-    return new Promise((resolve, reject) => {
-      try{
-        const req = tx(storeName, "readonly").getAll();
-        req.onsuccess = () => resolve(req.result || []);
-        req.onerror = () => reject(req.error);
-      }catch(err){ reject(err); }
-    });
-  }
-
-  function put(storeName, value){
-    return new Promise((resolve, reject) => {
-      try{
-        const req = tx(storeName, "readwrite").put(value);
-        req.onsuccess = () => resolve(true);
-        req.onerror = () => reject(req.error);
-      }catch(err){ reject(err); }
-    });
-  }
-
-  function bulkPut(storeName, values){
-    return new Promise((resolve, reject) => {
-      try{
-        const store = tx(storeName, "readwrite");
-        values.forEach(v => store.put(v));
-        store.transaction.oncomplete = () => resolve(true);
-        store.transaction.onerror = () => reject(store.transaction.error);
-      }catch(err){ reject(err); }
-    });
-  }
-
-  function del(storeName, key){
-    return new Promise((resolve, reject) => {
-      try{
-        const req = tx(storeName, "readwrite").delete(key);
-        req.onsuccess = () => resolve(true);
-        req.onerror = () => reject(req.error);
-      }catch(err){ reject(err); }
-    });
-  }
-
-  function clearStore(storeName){
-    return new Promise((resolve, reject) => {
-      try{
-        const req = tx(storeName, "readwrite").clear();
-        req.onsuccess = () => resolve(true);
-        req.onerror = () => reject(req.error);
-      }catch(err){ reject(err); }
-    });
-  }
-
-  return { open, getAll, put, bulkPut, del, clearStore };
+  async function clearLocal(){for(const n of ['tools','categories','settings','snapshots'])await localClear(n);}
+  return {open,getAll:localGetAll,put,bulkPut,del,clearStore,syncForUser,clearLocal};
 })();
 
 /* ============================================================
@@ -1461,6 +1459,77 @@ function renderSettingsPanel(panelName){
   document.querySelectorAll('.settings-nav-item').forEach(b=>b.classList.toggle('active', b.dataset.panel===panelName));
   const panel = document.getElementById('settings-panel');
 
+  if(panelName === 'account'){
+    const email = currentUser?.email || 'Not signed in';
+    panel.innerHTML = `
+      <h3>Account</h3>
+      <div class="panel-sub">Manage the email address and password connected to your Toolify account.</div>
+      <div class="settings-block">
+        <div class="settings-row">
+          <div><div class="settings-row-label">Current email</div><div class="settings-row-desc">${escapeHTML(email)}</div></div>
+          <span class="tool-badge"><span class="dot"></span>Signed in</span>
+        </div>
+        <div class="backup-card" style="margin-top:12px;">
+          <h4>Change email address</h4>
+          <p>Supabase will send a confirmation link to verify the new email address. Your account data will stay attached to this account.</p>
+          <div class="field"><label class="field-label" for="account-new-email">New email address</label><input class="field-input" id="account-new-email" type="email" autocomplete="email" placeholder="new@example.com"></div>
+          <button class="btn btn-solid" id="account-change-email">Send verification email</button>
+        </div>
+      </div>
+      <div class="settings-block">
+        <div class="backup-card">
+          <h4>Change password</h4>
+          <p>Enter your current password first, then choose a new one (at least 6 characters).</p>
+          <div class="field"><label class="field-label" for="account-current-password">Current password</label><input class="field-input" id="account-current-password" type="password" autocomplete="current-password" placeholder="Current password"></div>
+          <div class="field"><label class="field-label" for="account-new-password">New password</label><input class="field-input" id="account-new-password" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters"></div>
+          <div class="field"><label class="field-label" for="account-confirm-password">Confirm new password</label><input class="field-input" id="account-confirm-password" type="password" autocomplete="new-password" minlength="6" placeholder="Repeat new password"></div>
+          <button class="btn btn-solid" id="account-change-password">Update password</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Sign out</div><div class="settings-row-desc">Sign out of Toolify on this browser.</div></div>
+        <button class="btn btn-danger" id="account-panel-signout">Sign out</button>
+      </div>
+    `;
+    document.getElementById('account-change-email').addEventListener('click', async ()=>{
+      const nextEmail = document.getElementById('account-new-email').value.trim();
+      if(!nextEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)){toast('Enter a valid email address.','error');return;}
+      const btn = document.getElementById('account-change-email'); btn.disabled = true; btn.textContent = 'Sending…';
+      try{
+        const {error} = await supabaseClient.auth.updateUser({email:nextEmail},{emailRedirectTo:window.location.origin+window.location.pathname});
+        if(error) throw error;
+        toast('Verification email sent. Confirm the new address to finish the change.');
+        document.getElementById('account-new-email').value = '';
+      }catch(err){toast(err.message || 'Could not update email.','error');}
+      finally{btn.disabled=false;btn.textContent='Send verification email';}
+    });
+    document.getElementById('account-change-password').addEventListener('click', async ()=>{
+      const oldPass = document.getElementById('account-current-password').value;
+      const nextPass = document.getElementById('account-new-password').value;
+      const confirmPass = document.getElementById('account-confirm-password').value;
+      if(!oldPass || !nextPass){toast('Complete all password fields.','error');return;}
+      if(nextPass.length < 6){toast('New password must be at least 6 characters.','error');return;}
+      if(nextPass !== confirmPass){toast('New passwords do not match.','error');return;}
+      if(nextPass === oldPass){toast('Choose a password different from your current one.','error');return;}
+      const btn = document.getElementById('account-change-password'); btn.disabled=true; btn.textContent='Updating…';
+      try{
+        const {error:verifyError} = await supabaseClient.auth.signInWithPassword({email:currentUser.email,password:oldPass});
+        if(verifyError) throw new Error('Current password is incorrect.');
+        const {error} = await supabaseClient.auth.updateUser({password:nextPass});
+        if(error) throw error;
+        document.getElementById('account-current-password').value='';
+        document.getElementById('account-new-password').value='';
+        document.getElementById('account-confirm-password').value='';
+        toast('Password updated successfully.');
+      }catch(err){toast(err.message || 'Could not update password.','error');}
+      finally{btn.disabled=false;btn.textContent='Update password';}
+    });
+    document.getElementById('account-panel-signout').addEventListener('click', async ()=>{
+      const {error} = await supabaseClient.auth.signOut();
+      if(error) toast(error.message || 'Could not sign out.','error');
+    });
+  }
+
   if(panelName === 'general'){
     panel.innerHTML = `
       <h3>General</h3>
@@ -1778,9 +1847,10 @@ function wireEvents(){
   // Keyboard: escape closes topmost open overlay
   document.addEventListener('keydown', (e)=>{
     if(e.key !== 'Escape') return;
-    const ids = ['confirm-overlay','reset-overlay','import-overlay','tool-overlay','settings-overlay'];
-    const topmostId = ids.find(id => document.getElementById(id).classList.contains('open'));
-    if(topmostId) document.getElementById(topmostId).classList.remove('open');
+    ['tool-overlay','confirm-overlay','reset-overlay','import-overlay','settings-overlay'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el.classList.contains('open')) el.classList.remove('open');
+    });
     closeMobileSidebar();
   });
 
@@ -1792,48 +1862,42 @@ function wireEvents(){
 }
 
 /* ============================================================
-   21. INIT
+   21. AUTHENTICATION + INIT
    ============================================================ */
+let authMode='login';
+function authMessage(message,isError=false){const el=document.getElementById('auth-message');el.textContent=message;el.classList.toggle('error',isError);}
+function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit');document.getElementById('auth-confirm-wrap').style.display=mode==='signup'?'block':'none';document.getElementById('auth-new-wrap').style.display=mode==='recovery'?'block':'none';document.getElementById('auth-password-wrap').style.display=(mode==='recovery'||mode==='forgot')?'none':'block';document.getElementById('auth-password').required=mode!=='recovery'&&mode!=='forgot';document.getElementById('auth-confirm').required=mode==='signup';document.getElementById('auth-new-password').required=mode==='recovery';document.getElementById('auth-toggle').style.display=mode==='recovery'?'none':'inline';document.getElementById('auth-forgot').style.display=mode==='recovery'||mode==='signup'?'none':'inline';title.textContent=mode==='signup'?'Create your account':mode==='forgot'?'Reset your password':mode==='recovery'?'Choose a new password':'Welcome back';sub.textContent=mode==='signup'?'Create an account to keep your tools synced securely.':mode==='forgot'?'We will email you a secure password reset link.':mode==='recovery'?'Set a new password for your Toolify account.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=mode==='signup'?'Create account':mode==='forgot'?'Send reset link':mode==='recovery'?'Update password':'Sign in';authMessage('');}
+async function showAuthenticatedApp(user){currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'newest',lastBackupAt:null,landing:'auto'};document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('account-signout').title=user.email||'Signed in';try{await DB.open();await DB.syncForUser(user);await initAppData();}catch(e){console.error(e);authMessage('Cloud sync failed: '+(e.message||'Check your Supabase tables and RLS policies.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
+async function initAppData(){try{const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);}catch(e){toast('Could not load saved data','error');}ensureUncategorized();const ids=new Set(State.categories.map(c=>c.id));let fixed=false;State.tools.forEach(t=>{if(!ids.has(t.categoryId)){t.categoryId=UNCATEGORIZED_ID;fixed=true;}});if(fixed)await DB.bulkPut('tools',State.tools);if(!State.categories.length)ensureUncategorized();await DB.bulkPut('categories',State.categories);applyTheme();State.ui.activeNav=State.tools.some(t=>t.favorite)?'favorites':'all';wireEvents();render();}
 async function init(){
-  try{
-    await DB.open();
-  }catch(e){
-    toast('Could not open local storage. Some browsers block storage for local files.', 'error');
-  }
-
-  try{
-    const [tools, categories, settingsRows] = await Promise.all([
-      DB.getAll('tools'), DB.getAll('categories'), DB.getAll('settings')
-    ]);
-    State.tools = tools;
-    State.categories = categories;
-    const savedSettings = settingsRows.find(r=>r.key==='app');
-    if(savedSettings) Object.assign(State.settings, savedSettings.value);
-  }catch(e){
-    toast('Could not load saved data', 'error');
-  }
-
-  ensureUncategorized();
-  // reconciliation: fix tools referencing missing categories
-  const catIds = new Set(State.categories.map(c=>c.id));
-  let reconciled = false;
-  State.tools.forEach(t=>{
-    if(!catIds.has(t.categoryId)){ t.categoryId = UNCATEGORIZED_ID; reconciled = true; }
+  await DB.open();
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  if(session?.user){await showAuthenticatedApp(session.user);}else{document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}
+  supabaseClient.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='PASSWORD_RECOVERY'){setAuthMode('recovery');document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';return;}
+    if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}else if(!session?.user&&currentUser){currentUser=null;await DB.clearLocal();document.getElementById('app').style.display='none';document.getElementById('auth-screen').style.display='flex';setAuthMode('login');}
   });
-  if(reconciled){ try{ await DB.bulkPut('tools', State.tools); }catch(e){} }
-  if(!State.categories.length){ ensureUncategorized(); }
-  try{ await DB.bulkPut('categories', State.categories); }catch(e){}
-
-  applyTheme();
-
-  // Landing screen
-  const hasFav = State.tools.some(t=>t.favorite);
-  State.ui.activeNav = hasFav ? 'favorites' : 'all';
-
-  wireEvents();
-  render();
 }
-
+document.getElementById('auth-form').addEventListener('submit',async e=>{
+  e.preventDefault();const email=document.getElementById('auth-email').value.trim();const password=document.getElementById('auth-password').value;const submit=document.getElementById('auth-submit');submit.disabled=true;authMessage('Please wait…');
+  try{
+    if(authMode==='signup'){
+      if(password!==document.getElementById('auth-confirm').value)throw new Error('Passwords do not match.');
+      const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin+window.location.pathname}});if(error)throw error;
+      authMessage(data.session?'Account created. Loading your library…':'Account created. Check your email and verify your address before signing in.');
+      if(data.session)await showAuthenticatedApp(data.user);
+    }else if(authMode==='forgot'){
+      const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});if(error)throw error;authMessage('If an account exists for this email, a password reset link has been sent.');
+    }else if(authMode==='recovery'){
+      const next=document.getElementById('auth-new-password').value;if(next.length<6)throw new Error('Password must be at least 6 characters.');const {error}=await supabaseClient.auth.updateUser({password:next});if(error)throw error;authMessage('Password updated. You can now sign in.');setAuthMode('login');
+    }else{
+      const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;await showAuthenticatedApp(data.user);
+    }
+  }catch(err){authMessage(err.message||'Authentication failed.',true);}finally{submit.disabled=false;}
+});
+document.getElementById('auth-toggle').addEventListener('click',()=>setAuthMode(authMode==='signup'?'login':'signup'));
+document.getElementById('auth-forgot').addEventListener('click',()=>setAuthMode('forgot'));
+document.getElementById('account-signout').addEventListener('click',async()=>{await supabaseClient.auth.signOut();});
 init();
 
 })();
