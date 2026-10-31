@@ -251,6 +251,11 @@ a{color:inherit;}
   z-index:100; opacity:0; pointer-events:none; transition:opacity var(--dur-med) var(--ease); padding:20px;
 }
 .overlay.open{opacity:1; pointer-events:auto;}
+#tool-overlay{z-index:100;}
+#settings-overlay{z-index:100;}
+#confirm-overlay,
+#reset-overlay,
+#import-overlay{z-index:300;}
 .modal{
   background:var(--bg-elev-1); border:1px solid var(--border-med); border-radius:var(--radius-lg); box-shadow:var(--shadow-modal);
   width:100%; max-width:440px; max-height:88vh; display:flex; flex-direction:column; overflow:hidden;
@@ -370,7 +375,7 @@ a{color:inherit;}
 /* ============================================================
    TOASTS
    ============================================================ */
-#toast-stack{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:200; display:flex; flex-direction:column-reverse; gap:8px; align-items:center;}
+#toast-stack{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:500; display:flex; flex-direction:column-reverse; gap:8px; align-items:center; pointer-events:none;}
 .toast{
   display:flex; align-items:center; gap:9px; background:var(--bg-elev-1); border:1px solid var(--border-med); box-shadow:var(--shadow-modal);
   padding:10px 15px; border-radius:var(--radius-md); font-size:12.5px; font-weight:550; color:var(--text-primary);
@@ -1773,10 +1778,9 @@ function wireEvents(){
   // Keyboard: escape closes topmost open overlay
   document.addEventListener('keydown', (e)=>{
     if(e.key !== 'Escape') return;
-    ['tool-overlay','confirm-overlay','reset-overlay','import-overlay','settings-overlay'].forEach(id=>{
-      const el = document.getElementById(id);
-      if(el.classList.contains('open')) el.classList.remove('open');
-    });
+    const ids = ['confirm-overlay','reset-overlay','import-overlay','tool-overlay','settings-overlay'];
+    const topmostId = ids.find(id => document.getElementById(id).classList.contains('open'));
+    if(topmostId) document.getElementById(topmostId).classList.remove('open');
     closeMobileSidebar();
   });
 
