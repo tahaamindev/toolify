@@ -251,6 +251,9 @@ a{color:inherit;}
   z-index:100; opacity:0; pointer-events:none; transition:opacity var(--dur-med) var(--ease); padding:20px;
 }
 .overlay.open{opacity:1; pointer-events:auto;}
+/* Stacking order: notifications/confirmations must stay above settings */
+#settings-overlay{z-index:100;}
+#confirm-overlay,#reset-overlay,#import-overlay{z-index:150;}
 .modal{
   background:var(--bg-elev-1); border:1px solid var(--border-med); border-radius:var(--radius-lg); box-shadow:var(--shadow-modal);
   width:100%; max-width:440px; max-height:88vh; display:flex; flex-direction:column; overflow:hidden;
