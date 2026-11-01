@@ -423,8 +423,8 @@ a{color:inherit;}
   .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;}
   #settings-overlay .modal{height:90vh; max-height:none;}
   .settings-layout{flex-direction:column;}
-  .settings-nav{width:100%; display:flex; overflow-x:auto; border-right:none; border-bottom:1px solid var(--border-subtle); padding:8px;}
-  .settings-nav-item{flex-shrink:0; margin-right:4px;}
+  .settings-nav{width:100%; display:flex; flex-wrap:wrap; gap:4px; border-right:none; border-bottom:1px solid var(--border-subtle); padding:8px;}
+  .settings-nav-item{flex:0 0 auto; margin-right:0;}
 }
 .mobile-menu-btn{display:none; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; border:1px solid var(--border-subtle); background:var(--bg-elev-2); color:var(--text-secondary);}
 .mobile-menu-btn svg{width:16px; height:16px;}
@@ -629,8 +629,8 @@ a{color:inherit;}
     </div>
     <div class="settings-layout">
       <div class="settings-nav" id="settings-nav">
-        <button class="settings-nav-item" data-panel="account">Account</button>
         <button class="settings-nav-item" data-panel="general">General</button>
+        <button class="settings-nav-item" data-panel="account">Accounts</button>
         <button class="settings-nav-item" data-panel="tools">Tools</button>
         <button class="settings-nav-item" data-panel="categories">Categories</button>
         <button class="settings-nav-item" data-panel="backup">Backup &amp; Restore</button>
@@ -789,9 +789,10 @@ const State = {
   settings: {
     theme: "dark",
     view: "grid",
-    sort: "newest",
+    sort: "recent",
     lastBackupAt: null,
-    landing: "auto"
+    landing: "auto",
+clickSound: "click"
   },
   ui: {
     activeNav: "all",   // 'all' | 'favorites' | categoryId
@@ -813,6 +814,20 @@ async function persistCategory(cat){
 /* ============================================================
    4. TOAST
    ============================================================ */
+function playClickSound(){
+  const pref = State.settings.clickSound || 'off';
+  if(pref === 'off') return;
+  try{
+    const ctx = playClickSound._ctx || (playClickSound._ctx = new (window.AudioContext || window.webkitAudioContext)());
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if(pref === 'click'){ osc.type='square'; osc.frequency.setValueAtTime(820, now); gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.0001, now+0.06); osc.start(now); osc.stop(now+0.06); }
+    else if(pref === 'pop'){ osc.type='sine'; osc.frequency.setValueAtTime(620, now); osc.frequency.exponentialRampToValueAtTime(280, now+0.09); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.0001, now+0.1); osc.start(now); osc.stop(now+0.1); }
+    else if(pref === 'ding'){ osc.type='sine'; osc.frequency.setValueAtTime(880, now); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.0001, now+0.25); osc.start(now); osc.stop(now+0.25); }
+  }catch(e){}
+}
 function toast(msg, type){
   const stack = document.getElementById('toast-stack');
   const el = document.createElement('div');
@@ -1042,6 +1057,7 @@ function renderGrid(){
 
 function openTool(tool){
   if(!tool || !isSafeToOpen(tool.url)) { toast('This URL cannot be opened safely.', 'error'); return; }
+  playClickSound();
   tool.lastOpenedAt = nowISO();
   persistTool(tool).catch(()=>{});
   window.open(tool.url, '_blank', 'noopener,noreferrer');
@@ -1447,7 +1463,7 @@ async function resetApp(){
   }catch(e){ toast('Reset encountered a storage error', 'error'); }
   State.tools = [];
   State.categories = [{id:UNCATEGORIZED_ID, name:'Uncategorized', system:true, createdAt: nowISO()}];
-  State.settings = {theme:'dark', view:'grid', sort:'newest', lastBackupAt:null, landing:'auto'};
+  State.settings = {theme:'dark', view:'grid', sort:'recent', lastBackupAt:null, landing:'auto', clickSound:'click'};
   State.ui.activeNav = 'all';
   applyTheme();
   await persistSettings();
@@ -1490,7 +1506,7 @@ function renderSettingsPanel(panelName){
   if(panelName === 'account'){
     const email = currentUser?.email || 'Not signed in';
     panel.innerHTML = `
-      <h3>Account</h3>
+      <h3>Accounts</h3>
       <div class="panel-sub">Manage the email address and password connected to your Toolify account.</div>
       <div class="settings-block">
         <div class="settings-row">
@@ -1570,7 +1586,25 @@ function renderSettingsPanel(panelName){
         <div><div class="settings-row-label">Backup reminders</div><div class="settings-row-desc">Get a gentle nudge to export a backup periodically.</div></div>
         <div style="font-size:12.5px; color:var(--text-tertiary);">Enabled</div>
       </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Click sound</div><div class="settings-row-desc">Play a sound when opening a tool. Choose a sound or turn it off.</div></div>
+        <select class="field-select" id="click-sound-select" style="width:auto; min-width:120px;">
+          <option value="off">Off</option>
+          <option value="click">Click</option>
+          <option value="pop">Pop</option>
+          <option value="ding">Ding</option>
+        </select>
+      </div>
     `;
+    const soundSel = document.getElementById('click-sound-select');
+    if(soundSel){
+      soundSel.value = State.settings.clickSound || 'off';
+      soundSel.addEventListener('change', async ()=>{
+        State.settings.clickSound = soundSel.value;
+        await persistSettings();
+        if(soundSel.value !== 'off') playClickSound();
+      });
+    }
   }
 
   else if(panelName === 'tools'){
@@ -1913,7 +1947,7 @@ function wireEvents(){
 let authMode='login';
 function authMessage(message,isError=false){const el=document.getElementById('auth-message');el.textContent=message;el.classList.toggle('error',isError);}
 function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit');document.getElementById('auth-confirm-wrap').style.display=mode==='signup'?'block':'none';document.getElementById('auth-new-wrap').style.display=mode==='recovery'?'block':'none';document.getElementById('auth-password-wrap').style.display=(mode==='recovery'||mode==='forgot')?'none':'block';document.getElementById('auth-password').required=mode!=='recovery'&&mode!=='forgot';document.getElementById('auth-confirm').required=mode==='signup';document.getElementById('auth-new-password').required=mode==='recovery';document.getElementById('auth-toggle').style.display=mode==='recovery'?'none':'inline';document.getElementById('auth-forgot').style.display=mode==='recovery'||mode==='signup'?'none':'inline';title.textContent=mode==='signup'?'Create your account':mode==='forgot'?'Reset your password':mode==='recovery'?'Choose a new password':'Welcome back';sub.textContent=mode==='signup'?'Create an account to keep your tools synced securely.':mode==='forgot'?'We will email you a secure password reset link.':mode==='recovery'?'Set a new password for your Toolify account.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=mode==='signup'?'Create account':mode==='forgot'?'Send reset link':mode==='recovery'?'Update password':'Sign in';authMessage('');}
-async function showAuthenticatedApp(user){currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'newest',lastBackupAt:null,landing:'auto'};document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('account-signout').title=user.email||'Signed in';try{await DB.open();await DB.syncForUser(user);await initAppData();}catch(e){console.error(e);authMessage('Cloud sync failed: '+(e.message||'Check your Supabase tables and RLS policies.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
+async function showAuthenticatedApp(user){currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click'};document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('account-signout').title=user.email||'Signed in';try{await DB.open();await DB.syncForUser(user);await initAppData();}catch(e){console.error(e);authMessage('Cloud sync failed: '+(e.message||'Check your Supabase tables and RLS policies.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
 async function initAppData(){try{const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);}catch(e){toast('Could not load saved data','error');}ensureUncategorized();const ids=new Set(State.categories.map(c=>c.id));let fixed=false;State.tools.forEach(t=>{if(!ids.has(t.categoryId)){t.categoryId=UNCATEGORIZED_ID;fixed=true;}});if(fixed)await DB.bulkPut('tools',State.tools);if(!State.categories.length)ensureUncategorized();await DB.bulkPut('categories',State.categories);applyTheme();State.ui.activeNav=State.tools.some(t=>t.favorite)?'favorites':'all';wireEvents();render();}
 async function init(){
   await DB.open();
