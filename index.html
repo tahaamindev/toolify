@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b0f0d'/%3E%3Cpath d='M17 17h30v9H36v22h-8V26H17z' fill='%2334d399'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111312">
 <title>Toolify —  Tool Library</title>
 <style>
 /* ============================================================
@@ -188,6 +190,7 @@ a{color:inherit;}
   display:grid; grid-template-columns:repeat(auto-fill,minmax(216px,1fr)); gap:16px; perspective:1200px;
 }
 .grid.list-mode{display:flex; flex-direction:column; gap:6px;}
+.grid.compact-mode{grid-template-columns:repeat(auto-fill,minmax(76px,1fr)); gap:10px;}
 
 .tool-card{
   position:relative; background:var(--surface-card); border:1px solid var(--border-subtle); border-radius:var(--radius-lg);
@@ -229,6 +232,11 @@ a{color:inherit;}
 .list-mode .tool-desc{-webkit-line-clamp:1; min-height:0; margin:0; flex:1;}
 .list-mode .tool-badge{flex-shrink:0;}
 .list-mode .fav-indicator{margin:0;}
+
+/* compact mode */
+.compact-mode .tool-card{display:flex; align-items:center; justify-content:center; padding:10px; border-radius:var(--radius-md); min-height:76px;}
+.compact-mode .tool-icon{width:42px; height:42px; border-radius:10px;}
+.compact-mode .card-top{margin:0;}
 
 .empty-state{
   display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
@@ -393,6 +401,11 @@ a{color:inherit;}
 .auth-brand-mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(155deg,var(--emerald-400),var(--emerald-700));display:grid;place-items:center;color:#08150f;font-weight:800}
 .auth-card h1{font-size:23px;letter-spacing:-.03em;margin-bottom:6px}.auth-sub{color:var(--text-secondary);font-size:13px;margin-bottom:22px;line-height:1.5}
 .auth-field{margin-bottom:13px}.auth-field label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}.auth-field input{width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--border-med);background:var(--bg-elev-2);color:var(--text-primary);font-size:14px}
+.password-wrap{position:relative;}
+.password-wrap input{padding-right:40px;}
+.password-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--text-tertiary);cursor:pointer;padding:6px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.password-toggle:hover{color:var(--text-primary);background:var(--bg-elev-3);}
+.password-toggle svg{width:18px;height:18px;}
 .auth-actions{display:flex;gap:8px;margin-top:17px}.auth-actions button{flex:1;padding:11px;border:1px solid var(--border-med);border-radius:8px;font-weight:650}.auth-primary{background:var(--accent-strong);color:#08150f;border-color:transparent!important}.auth-secondary{background:transparent;color:var(--text-primary)}
 .auth-links{display:flex;justify-content:space-between;gap:12px;margin-top:16px;font-size:12px;color:var(--text-secondary)}.auth-links button{background:none;border:0;color:var(--accent);font:inherit;cursor:pointer}.auth-message{font-size:12px;line-height:1.5;margin-top:14px;color:var(--text-secondary);min-height:18px}.auth-message.error{color:var(--danger)}
 #account-signout{padding:7px 10px;border:1px solid var(--border-subtle);border-radius:8px;background:var(--bg-elev-2);color:var(--text-secondary);font-size:12px}
@@ -432,9 +445,9 @@ a{color:inherit;}
     <p class="auth-sub" id="auth-sub">Sign in to access your personal cloud-synced tool library.</p>
     <form id="auth-form">
       <div class="auth-field"><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
-      <div class="auth-field" id="auth-password-wrap"><label for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters"></div>
-      <div class="auth-field" id="auth-confirm-wrap" style="display:none"><label for="auth-confirm">Confirm password</label><input id="auth-confirm" type="password" autocomplete="new-password" minlength="6" placeholder="Repeat password"></div>
-      <div class="auth-field" id="auth-new-wrap" style="display:none"><label for="auth-new-password">New password</label><input id="auth-new-password" type="password" autocomplete="new-password" minlength="6" placeholder="New password"></div>
+      <div class="auth-field" id="auth-password-wrap"><label for="auth-password">Password</label><div class="password-wrap"><input id="auth-password" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters"><button type="button" class="password-toggle" data-target="auth-password" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
+      <div class="auth-field" id="auth-confirm-wrap" style="display:none"><label for="auth-confirm">Confirm password</label><div class="password-wrap"><input id="auth-confirm" type="password" autocomplete="new-password" minlength="6" placeholder="Repeat password"><button type="button" class="password-toggle" data-target="auth-confirm" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
+      <div class="auth-field" id="auth-new-wrap" style="display:none"><label for="auth-new-password">New password</label><div class="password-wrap"><input id="auth-new-password" type="password" autocomplete="new-password" minlength="6" placeholder="New password"><button type="button" class="password-toggle" data-target="auth-new-password" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
       <div class="auth-actions"><button class="auth-primary" id="auth-submit" type="submit">Sign in</button></div>
     </form>
     <div class="auth-links"><button type="button" id="auth-toggle">Create account</button><button type="button" id="auth-forgot">Forgot password?</button></div>
@@ -497,11 +510,13 @@ a{color:inherit;}
             <button class="sort-option" data-sort="oldest">Oldest</button>
             <button class="sort-option" data-sort="az">A – Z</button>
             <button class="sort-option" data-sort="za">Z – A</button>
+            <button class="sort-option" data-sort="recent">Recently opened</button>
           </div>
         </div>
         <div class="view-toggle">
           <button class="view-btn" data-view="grid" aria-label="Grid view"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/></svg></button>
           <button class="view-btn" data-view="list" aria-label="List view"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+          <button class="view-btn" data-view="compact" aria-label="Compact view"><svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="2.2" fill="currentColor"/><circle cx="12" cy="6" r="2.2" fill="currentColor"/><circle cx="18" cy="6" r="2.2" fill="currentColor"/><circle cx="6" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="18" cy="12" r="2.2" fill="currentColor"/><circle cx="6" cy="18" r="2.2" fill="currentColor"/><circle cx="12" cy="18" r="2.2" fill="currentColor"/><circle cx="18" cy="18" r="2.2" fill="currentColor"/></svg></button>
         </div>
       </div>
     </div>
@@ -915,6 +930,7 @@ function getCurrentToolset(){
     case 'az': list.sort((a,b)=>a.name.localeCompare(b.name)); break;
     case 'za': list.sort((a,b)=>b.name.localeCompare(a.name)); break;
     case 'oldest': list.sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt)); break;
+    case 'recent': list.sort((a,b)=>new Date(b.lastOpenedAt||0)-new Date(a.lastOpenedAt||0)); break;
     default: list.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)); // newest
   }
   return list;
@@ -956,6 +972,7 @@ function renderGrid(){
   renderTopbar(list);
   const grid = document.getElementById('tool-grid');
   grid.classList.toggle('list-mode', State.settings.view === 'list');
+  grid.classList.toggle('compact-mode', State.settings.view === 'compact');
 
   if(list.length === 0){
     grid.innerHTML = '';
@@ -998,6 +1015,11 @@ function renderGrid(){
         ${favSvg}
       </div>`;
     }
+    if(State.settings.view === 'compact'){
+      return `<div class="tool-card" data-id="${tool.id}" tabindex="0" role="button" aria-label="Open ${escapeHTML(tool.name)}" title="${escapeHTML(tool.name)}">
+        <div class="tool-icon">${faviconMarkup(tool)}</div>
+      </div>`;
+    }
     return `<div class="tool-card" data-id="${tool.id}" tabindex="0" role="button" aria-label="Open ${escapeHTML(tool.name)}">
       <div class="card-top">
         <div class="tool-icon">${faviconMarkup(tool)}</div>
@@ -1020,13 +1042,16 @@ function renderGrid(){
 
 function openTool(tool){
   if(!tool || !isSafeToOpen(tool.url)) { toast('This URL cannot be opened safely.', 'error'); return; }
+  tool.lastOpenedAt = nowISO();
+  persistTool(tool).catch(()=>{});
   window.open(tool.url, '_blank', 'noopener,noreferrer');
+  if(State.settings.sort === 'recent') render();
 }
 
 /* ---- subtle 3D tilt on hover ---- */
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function attachTilt(card){
-  if(reduceMotion || State.settings.view === 'list') return;
+  if(reduceMotion || State.settings.view === 'list' || State.settings.view === 'compact') return;
   let raf = null;
   function onMove(e){
     const rect = card.getBoundingClientRect();
@@ -1052,7 +1077,7 @@ function render(){
   renderSidebar();
   renderGrid();
   document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===State.settings.view));
-  document.getElementById('sort-label').textContent = {newest:'Newest',oldest:'Oldest',az:'A – Z',za:'Z – A'}[State.settings.sort];
+  document.getElementById('sort-label').textContent = {newest:'Newest',oldest:'Oldest',az:'A – Z',za:'Z – A',recent:'Recently opened'}[State.settings.sort];
   document.querySelectorAll('.sort-option').forEach(o=>o.classList.toggle('active', o.dataset.sort===State.settings.sort));
 }
 
@@ -1651,10 +1676,11 @@ function renderSettingsPanel(panelName){
         </div>
       </div>
       <div class="settings-row">
-        <div><div class="settings-row-label">Default view</div><div class="settings-row-desc">Grid or list layout for your library.</div></div>
+        <div><div class="settings-row-label">Default view</div><div class="settings-row-desc">Grid, list, or compact icon layout for your library.</div></div>
         <div class="theme-picker" id="view-picker">
           <button class="theme-opt" data-view="grid">Grid</button>
           <button class="theme-opt" data-view="list">List</button>
+          <button class="theme-opt" data-view="compact">Compact</button>
         </div>
       </div>
     `;
@@ -1847,6 +1873,23 @@ function wireEvents(){
     document.getElementById('sidebar').classList.add('mobile-open');
   });
 
+  // Swipe gestures (mobile): right swipe opens sidebar, left swipe closes
+  let _swipeStartX = 0, _swipeStartY = 0;
+  document.addEventListener('touchstart', (e)=>{
+    if(!e.touches || e.touches.length !== 1) return;
+    _swipeStartX = e.touches[0].clientX;
+    _swipeStartY = e.touches[0].clientY;
+  }, {passive:true});
+  document.addEventListener('touchend', (e)=>{
+    if(!e.changedTouches || e.changedTouches.length !== 1) return;
+    const dx = e.changedTouches[0].clientX - _swipeStartX;
+    const dy = e.changedTouches[0].clientY - _swipeStartY;
+    if(Math.abs(dx) < 60 || Math.abs(dy) > 60) return;
+    const sidebar = document.getElementById('sidebar');
+    if(dx > 0) sidebar.classList.add('mobile-open');
+    else sidebar.classList.remove('mobile-open');
+  }, {passive:true});
+
   // Keyboard: escape closes topmost open overlay
   document.addEventListener('keydown', (e)=>{
     if(e.key !== 'Escape') return;
@@ -1900,7 +1943,36 @@ document.getElementById('auth-form').addEventListener('submit',async e=>{
 });
 document.getElementById('auth-toggle').addEventListener('click',()=>setAuthMode(authMode==='signup'?'login':'signup'));
 document.getElementById('auth-forgot').addEventListener('click',()=>setAuthMode('forgot'));
+document.querySelectorAll('.password-toggle').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const input = document.getElementById(btn.dataset.target);
+    if(!input) return;
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    btn.innerHTML = show
+      ? '<svg viewBox="0 0 24 24" fill="none"><path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.1A10.5 10.5 0 0112 5c6.5 0 10 7 10 7a17 17 0 01-3.2 4.4M6.2 6.2C3.6 8.1 2 12 2 12s3.5 7 10 7c1.3 0 2.5-.2 3.6-.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>';
+  });
+});
 document.getElementById('account-signout').addEventListener('click',async()=>{await supabaseClient.auth.signOut();});
+
+// Service Worker registration (offline + auto-update)
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then((reg)=>{
+    reg.addEventListener('updatefound',()=>{
+      const newWorker=reg.installing;
+      if(!newWorker)return;
+      newWorker.addEventListener('statechange',()=>{
+        if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
+          // New version available — prompt reload on next load
+          console.log('New Toolify version available. Refresh to update.');
+        }
+      });
+    });
+  }).catch((err)=>console.log('SW registration failed:',err));
+}
+
 init();
 
 })();
