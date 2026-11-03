@@ -234,9 +234,13 @@ a{color:inherit;}
 .list-mode .fav-indicator{margin:0;}
 
 /* compact mode */
-.compact-mode .tool-card{display:flex; align-items:center; justify-content:center; padding:10px; border-radius:var(--radius-md); min-height:76px;}
+.compact-mode .tool-card{display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 8px; border-radius:var(--radius-md); min-height:76px; gap:0; position:relative; overflow:hidden;}
 .compact-mode .tool-icon{width:42px; height:42px; border-radius:10px;}
 .compact-mode .card-top{margin:0;}
+.compact-mode .compact-name{font-size:11px; font-weight:600; color:var(--text-primary); text-align:center; width:100%; margin-top:0; max-height:0; opacity:0; transform:translateY(4px); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; transition:max-height var(--dur-med) var(--ease), opacity var(--dur-fast) var(--ease), transform var(--dur-med) var(--ease), margin-top var(--dur-med) var(--ease);}
+.compact-mode .tool-card:hover .compact-name,
+.compact-mode .tool-card:focus .compact-name,
+.compact-mode .tool-card:focus-visible .compact-name{max-height:20px; opacity:1; transform:translateY(0); margin-top:6px;}
 
 .empty-state{
   display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
@@ -375,8 +379,20 @@ a{color:inherit;}
 .about-block{text-align:left;}
 .about-mark{width:44px; height:44px; border-radius:13px; background:linear-gradient(155deg, var(--emerald-400), var(--emerald-700)); display:flex; align-items:center; justify-content:center; color:#08150f; font-weight:700; font-size:20px; margin-bottom:14px;}
 .about-block h4{font-size:16px; font-weight:650; margin-bottom:4px;}
-.about-block p{font-size:12.5px; color:var(--text-secondary); line-height:1.6; margin-bottom:10px; max-width:420px;}
+.about-block p{font-size:12.5px; color:var(--text-secondary); line-height:1.6; margin-bottom:10px; max-width:620px;}
 .about-meta{font-size:11.5px; color:var(--text-tertiary); margin-top:16px;}
+.about-section{margin-top:18px;}
+.about-section h5{font-size:13px; font-weight:650; color:var(--text-primary); margin-bottom:6px;}
+.about-section p{max-width:620px;}
+.about-list{margin:6px 0 10px 18px; padding:0; font-size:12.5px; color:var(--text-secondary); line-height:1.7;}
+.about-list li{margin-bottom:3px;}
+.about-tag{display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; background:var(--bg-elev-3); color:var(--text-secondary); margin:2px 4px 2px 0;}
+.about-links{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+.about-link{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:6px 10px; border-radius:var(--radius-sm); background:var(--bg-elev-3); color:var(--accent); text-decoration:none; border:1px solid var(--border-subtle);}
+.about-link:hover{background:var(--bg-elev-2);}
+.about-hr{border:none; border-top:1px solid var(--border-subtle); margin:18px 0;}
+.report-form .field{margin-bottom:12px;}
+.report-form textarea{min-height:120px; resize:vertical;}
 
 /* ============================================================
    TOASTS
@@ -411,6 +427,15 @@ a{color:inherit;}
 #account-signout{padding:7px 10px;border:1px solid var(--border-subtle);border-radius:8px;background:var(--bg-elev-2);color:var(--text-secondary);font-size:12px}
 
 /* ============================================================
+   KEYBOARD SHORTCUTS (settings display)
+   ============================================================ */
+.shortcut-list{display:flex; flex-direction:column; gap:6px; margin-top:8px;}
+.shortcut-row{display:flex; align-items:center; gap:12px; padding:8px 10px; background:var(--bg-elev-2); border:1px solid var(--border-subtle); border-radius:var(--radius-sm);}
+.shortcut-row kbd{display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:24px; padding:0 8px; border-radius:6px; background:var(--bg-elev-3); border:1px solid var(--border-med); font-family:inherit; font-size:12px; font-weight:600; color:var(--text-primary);}
+.shortcut-row span{font-size:13px; color:var(--text-secondary);}
+.settings-mobile-select{display:none;}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 860px){
@@ -418,13 +443,24 @@ a{color:inherit;}
   #sidebar.mobile-open{transform:translateX(0); box-shadow:0 0 0 2000px rgba(0,0,0,.4);}
   #sidebar.collapsed{width:230px;}
   .mobile-menu-btn{display:flex !important;}
-  .topbar{padding:14px 16px;}
+  .topbar{padding:14px 16px; transition:padding var(--dur-fast) var(--ease);}
   .content-scroll{padding:16px;}
   .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;}
-  #settings-overlay .modal{height:90vh; max-height:none;}
+  #settings-overlay .modal{height:92vh; max-height:none; width:96vw;}
   .settings-layout{flex-direction:column;}
-  .settings-nav{width:100%; display:flex; flex-wrap:wrap; gap:4px; border-right:none; border-bottom:1px solid var(--border-subtle); padding:8px;}
-  .settings-nav-item{flex:0 0 auto; margin-right:0;}
+  .settings-nav{width:100%; display:flex; flex-wrap:wrap; gap:6px; border-right:none; border-bottom:1px solid var(--border-subtle); padding:8px; overflow-x:visible;}
+  .settings-nav::-webkit-scrollbar{display:none;}
+  .settings-nav-item{flex:1 1 calc(33.333% - 6px); white-space:normal; text-align:center; justify-content:center; margin-right:0; font-size:12px; padding:8px 6px;}
+  .settings-panel{padding:16px;}
+  .settings-mobile-select{display:block; width:100%; padding:9px 12px; margin-bottom:8px; background:var(--bg-elev-2); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); color:var(--text-primary); font-size:13px;}
+  /* Hide settings sidebar nav on mobile (use grid of buttons instead; already visible) */
+
+  /* Mobile scroll: collapse topbar to search only */
+  .topbar.scrolled{padding:8px 16px;}
+  .topbar.scrolled .mobile-menu-btn,
+  .topbar.scrolled .topbar-title-wrap,
+  .topbar.scrolled .topbar-controls{display:none !important;}
+  .topbar.scrolled .search-wrap{max-width:none;}
 }
 .mobile-menu-btn{display:none; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; border:1px solid var(--border-subtle); background:var(--bg-elev-2); color:var(--text-secondary);}
 .mobile-menu-btn svg{width:16px; height:16px;}
@@ -636,6 +672,7 @@ a{color:inherit;}
         <button class="settings-nav-item" data-panel="backup">Backup &amp; Restore</button>
         <button class="settings-nav-item" data-panel="appearance">Appearance</button>
         <button class="settings-nav-item" data-panel="data">Data</button>
+        <button class="settings-nav-item" data-panel="reportbug">Report a Bug</button>
         <button class="settings-nav-item" data-panel="about">About</button>
       </div>
       <div class="settings-panel" id="settings-panel"></div>
@@ -655,7 +692,7 @@ a{color:inherit;}
    ============================================================ */
 const DB_NAME = "toolify-db";
 const DB_VERSION = 1;
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "0.1.0";
 const BACKUP_APP_ID = "toolify";
 const BACKUP_SCHEMA_VERSION = 1;
 const UNCATEGORIZED_ID = "uncategorized";
@@ -1033,6 +1070,7 @@ function renderGrid(){
     if(State.settings.view === 'compact'){
       return `<div class="tool-card" data-id="${tool.id}" tabindex="0" role="button" aria-label="Open ${escapeHTML(tool.name)}" title="${escapeHTML(tool.name)}">
         <div class="tool-icon">${faviconMarkup(tool)}</div>
+        <div class="compact-name">${escapeHTML(tool.name)}</div>
       </div>`;
     }
     return `<div class="tool-card" data-id="${tool.id}" tabindex="0" role="button" aria-label="Open ${escapeHTML(tool.name)}">
@@ -1490,6 +1528,16 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=
 /* ============================================================
    19. SETTINGS PANEL RENDERING
    ============================================================ */
+const SHORTCUTS = [
+  { keys: '/', action: 'Focus the search bar' },
+  { keys: 'Esc', action: 'Close open dialog or clear search' },
+  { keys: 'N', action: 'Add a new tool' },
+  { keys: ',', action: 'Open Settings' },
+  { keys: '?', action: 'Open Settings → General (shortcuts)' },
+  { keys: 'F', action: 'Go to Favorites' },
+  { keys: 'A', action: 'Go to All Tools' }
+];
+
 let currentSettingsPanel = 'general';
 
 function daysSince(iso){
@@ -1594,6 +1642,13 @@ function renderSettingsPanel(panelName){
           <option value="pop">Pop</option>
           <option value="ding">Ding</option>
         </select>
+      </div>
+      <div class="settings-block" style="margin-top:14px;">
+        <div class="settings-row-label">Keyboard shortcuts</div>
+        <div class="panel-sub" style="margin-bottom:8px;">Shortcuts that work anywhere in the app. Press the key to trigger the action.</div>
+        <div class="shortcut-list">
+          ${SHORTCUTS.map(s=>`<div class="shortcut-row"><kbd>${escapeHTML(s.keys)}</kbd><span>${escapeHTML(s.action)}</span></div>`).join('')}
+        </div>
       </div>
     `;
     const soundSel = document.getElementById('click-sound-select');
@@ -1766,12 +1821,171 @@ function renderSettingsPanel(panelName){
       <div class="about-block">
         <div class="about-mark">T</div>
         <h4>Toolify</h4>
-        <p>A private, offline-first library for the tools and websites you use every day. Everything is stored locally in this browser — nothing is sent anywhere.</p>
-        <p>Export a backup regularly from Settings → Backup &amp; Restore to protect your library against browser data loss.</p>
-        <div class="about-meta">Version ${APP_VERSION} · Local-first · No account required</div>
+        <p>Your Tools. Your Workspace. Your Productivity.</p>
+        <p>Toolify is a personal tool management and productivity platform designed to help you organize, manage, and access all your essential digital tools in one centralized workspace.</p>
+
+        <div class="about-section">
+          <h5>What Makes Toolify Special</h5>
+          <p>Toolify is built around simplicity, organization, accessibility, and personalization.</p>
+          <ul class="about-list">
+            <li><strong>Personal Tool Library</strong> — Save and manage all your frequently used tools in one place.</li>
+            <li><strong>Smart Categorization</strong> — Organize your tools into custom categories for a cleaner, structured workspace.</li>
+            <li><strong>Cloud Synchronization</strong> — Keep your tools, categories, and settings synchronized across devices.</li>
+            <li><strong>Personal Accounts</strong> — Create your own account using your email address and maintain a private workspace.</li>
+            <li><strong>Secure Data Management</strong> — Your personal data is protected through user-specific database access and Row Level Security (RLS).</li>
+            <li><strong>Backup &amp; Recovery</strong> — Export your data, restore previous backups, and recover your personal tool library when needed.</li>
+            <li><strong>Cross-Device Accessibility</strong> — Access your workspace from different devices without manually transferring your data.</li>
+          </ul>
+        </div>
+
+        <div class="about-section">
+          <h5>Available Features — Version 0.1.0</h5>
+          <p>Toolify is currently in its initial release, introducing the foundation of a personalized tool management ecosystem.</p>
+          <div>
+            <span class="about-tag">Account &amp; Authentication</span>
+            <span class="about-tag">Cloud Sync &amp; Database</span>
+            <span class="about-tag">Tool Management</span>
+            <span class="about-tag">Data Security</span>
+            <span class="about-tag">Deployment &amp; Data Recovery</span>
+            <span class="about-tag">Mobile-Optimized Interface</span>
+          </div>
+          <ul class="about-list">
+            <li>User Registration, Email Verification, Email &amp; Password Login</li>
+            <li>Forgot Password, Change Email, Change Password, Sign Out, Persistent Sessions</li>
+            <li>Supabase Backend Integration, Secure Cloud Storage, Multi-User Accounts</li>
+            <li>Private User Data, User-Specific Data Access, Cross-Device Synchronization</li>
+            <li>Tools, Categories &amp; Settings Synchronization, Database Snapshots</li>
+            <li>Save Personal Tools, Access Saved Tools, Custom Categories</li>
+            <li>Row Level Security (RLS), User-Based Database Permissions</li>
+            <li>GitHub Pages Hosting, Online Web App, Multi-Device Accessibility</li>
+            <li>Manual Backup Export, Backup Import &amp; Restore, Advanced Recovery System</li>
+          </ul>
+        </div>
+
+        <div class="about-section">
+          <h5>The Future of Toolify</h5>
+          <p>Toolify is not just a tool-saving application. It is evolving into a comprehensive personal productivity ecosystem — bringing multiple everyday utilities, productivity tools, management systems, and intelligent features together in one unified platform.</p>
+          <details>
+            <summary style="cursor:pointer; font-size:12.5px; color:var(--accent); margin-bottom:6px;">Show planned features roadmap</summary>
+            <ul class="about-list">
+              <li><strong>Productivity &amp; Organization:</strong> Smart Dashboard, Personal To-Do Manager, Daily Planner, Calendar &amp; Event Manager, Habit Tracker, Goal Tracker, Focus Timer (Pomodoro), Quick Notes, Sticky Notes</li>
+              <li><strong>Knowledge &amp; Digital Management:</strong> Smart Bookmark Manager, Reading List, Watch Later Manager, Prompt Library, Secure Vault, File Manager, Document Organizer, Cloud Storage Integration</li>
+              <li><strong>Planning &amp; Project Management:</strong> Mind Map Maker, Expense Tracker, Budget Planner, Project Manager, Workflow Automation, Email Organizer, Meeting Notes, Contact Manager</li>
+              <li><strong>Personal Life Management:</strong> Birthday &amp; Anniversary Reminders, Shopping List, Fitness Tracker, Travel Planner, Important Dates Countdown, Expense Manager</li>
+              <li><strong>Developer &amp; Utility Tools:</strong> Code Playground, Screenshot Tool, QR Code Generator, Password Generator, Quick Calculator, Currency Converter, Unit Converter, Image Compressor, Image Converter, PDF Toolkit, File Converter</li>
+              <li><strong>Creative &amp; Design Tools:</strong> Color Palette Manager, Font Library, Design Inspiration Board</li>
+              <li><strong>Advanced Productivity &amp; Intelligence:</strong> Social Media Planner, Content Calendar, Daily Inspiration, Global Notifications, Smart Reminders, Focus Mode, Distraction Blocker, Personal Automation Hub, AI Personal Assistant, Universal Search Across Everything</li>
+            </ul>
+          </details>
+        </div>
+        <div class="about-section">
+          <h5>Our Mission</h5>
+          <p>Our mission is to simplify digital life by creating one organized environment for the tools, resources, and utilities people use every day. Instead of switching between multiple platforms or trying to remember where everything is saved, Toolify aims to become your personal digital workspace — accessible, organized, and always evolving.</p>
+        </div>
+
+        <hr class="about-hr">
+
+        <div class="about-section">
+          <h5>Developer</h5>
+          <p>Designed &amp; Developed by TAHA AMIN. Toolify is independently developed with a focus on building practical, user-friendly, and modern web applications.</p>
+          <div class="about-links">
+            <a class="about-link" href="https://github.com/tahaamindev" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a class="about-link" href="https://tahaamindev.github.io/TAHA/" target="_blank" rel="noopener noreferrer">Portfolio</a>
+          </div>
+        </div>
+
+        <div class="about-section">
+          <h5>Report a Bug</h5>
+          <p>Your feedback plays an important role in making Toolify better. If you encounter a bug, unexpected behavior, or any technical issue, use <strong>Settings → Report a Bug</strong> to send a report directly to the developer.</p>
+          <p style="font-size:11.5px; color:var(--text-tertiary);">Bug Report Email: tahaamin.dev@gmail.com</p>
+        </div>
+
+        <div class="about-meta">Version ${APP_VERSION} · Web Application · Backend: Supabase · Hosting: GitHub Pages</div>
       </div>
     `;
   }
+
+  else if(panelName === 'reportbug'){
+    panel.innerHTML = `
+      <h3>Report a Bug</h3>
+      <div class="panel-sub">Found an issue or unexpected behavior? Send a report directly to the developer. No email app will open.</div>
+      <div class="settings-block">
+        <form class="report-form" id="report-bug-form">
+          <div class="field">
+            <label class="field-label" for="report-name">Your name (optional)</label>
+            <input class="field-input" id="report-name" type="text" placeholder="Your name">
+          </div>
+          <div class="field">
+            <label class="field-label" for="report-email">Your email (optional)</label>
+            <input class="field-input" id="report-email" type="email" placeholder="you@example.com">
+          </div>
+          <div class="field">
+            <label class="field-label" for="report-subject">Subject</label>
+            <input class="field-input" id="report-subject" type="text" placeholder="Short summary of the issue" required>
+          </div>
+          <div class="field">
+            <label class="field-label" for="report-message">Describe the bug</label>
+            <textarea class="field-input" id="report-message" placeholder="What happened? What did you expect? Steps to reproduce..." required></textarea>
+          </div>
+          <button class="btn btn-solid" type="submit" id="report-submit">Send Report</button>
+          <div id="report-status" style="font-size:12px; color:var(--text-tertiary); margin-top:8px;"></div>
+        </form>
+      </div>
+      <div class="settings-block">
+        <div class="settings-row">
+          <div><div class="settings-row-label">Direct email</div><div class="settings-row-desc">You can also reach the developer at tahaamin.dev@gmail.com</div></div>
+        </div>
+      </div>
+    `;
+    const form = document.getElementById('report-bug-form');
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const btn = document.getElementById('report-submit');
+      const status = document.getElementById('report-status');
+      const subject = document.getElementById('report-subject').value.trim();
+      const message = document.getElementById('report-message').value.trim();
+      if(!subject || !message){ status.textContent = 'Please fill in subject and description.'; status.style.color='var(--danger)'; return; }
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      status.textContent = '';
+      try {
+        const payload = {
+          name: document.getElementById('report-name').value.trim(),
+          email: document.getElementById('report-email').value.trim(),
+          _subject: 'Toolify Bug Report: ' + subject,
+          message: message,
+          _template: 'table'
+        };
+        const res = await fetch('https://formsubmit.co/ajax/tahaamin.dev@gmail.com', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if(!res.ok) throw new Error('Request failed');
+        const data = await res.json().catch(()=>({}));
+        if(data.success === 'false' || data.success === false) throw new Error(data.message || 'Send failed');
+        status.textContent = 'Report sent successfully. Thank you!';
+        status.style.color = 'var(--accent)';
+        form.reset();
+      } catch(err){
+        // Fallback: open the default email client (same tab, no new window) with the report pre-filled.
+        const mailSubject = 'Toolify Bug Report: ' + subject;
+        const mailBody = 'Name: ' + (document.getElementById('report-name').value.trim() || '-') +
+          '\nEmail: ' + (document.getElementById('report-email').value.trim() || '-') +
+          '\n\n' + message;
+        const mailto = 'mailto:tahaamin.dev@gmail.com?subject=' + encodeURIComponent(mailSubject) +
+          '&body=' + encodeURIComponent(mailBody);
+        status.textContent = 'Silent send failed. Opening your email app to send the report…';
+        status.style.color = 'var(--danger)';
+        // Small delay so the user sees the message, then hand off to the mail client.
+        setTimeout(()=>{ window.location.href = mailto; }, 400);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Report';
+      }
+    });
+  }
+
 }
 
 function renderManageToolsList(query){
@@ -1924,14 +2138,93 @@ function wireEvents(){
     else sidebar.classList.remove('mobile-open');
   }, {passive:true});
 
-  // Keyboard: escape closes topmost open overlay
+  // Mobile: collapse topbar to search-only while scrolling down the tool list
+  const contentScroll = document.querySelector('.content-scroll');
+  const topbar = document.querySelector('.topbar');
+  if(contentScroll && topbar){
+    let lastScrollTop = 0;
+    const onScroll = ()=>{
+      if(window.innerWidth > 860){ topbar.classList.remove('scrolled'); return; }
+      const st = contentScroll.scrollTop;
+      if(st > 40 && st > lastScrollTop){
+        topbar.classList.add('scrolled');
+      } else if(st <= 40){
+        topbar.classList.remove('scrolled');
+      }
+      // show again when scrolling up
+      if(st < lastScrollTop){
+        topbar.classList.remove('scrolled');
+      }
+      lastScrollTop = st <= 0 ? 0 : st;
+    };
+    contentScroll.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', ()=>{ if(window.innerWidth > 860) topbar.classList.remove('scrolled'); });
+  }
+
+  // Keyboard shortcuts
   document.addEventListener('keydown', (e)=>{
-    if(e.key !== 'Escape') return;
-    ['tool-overlay','confirm-overlay','reset-overlay','import-overlay','settings-overlay'].forEach(id=>{
-      const el = document.getElementById(id);
-      if(el.classList.contains('open')) el.classList.remove('open');
-    });
-    closeMobileSidebar();
+    const target = e.target;
+    const typing = !!(target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable));
+
+    // Escape always works
+    if(e.key === 'Escape'){
+      let closed = false;
+      ['tool-overlay','confirm-overlay','reset-overlay','import-overlay','settings-overlay'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(el && el.classList.contains('open')){ el.classList.remove('open'); closed = true; }
+      });
+      closeMobileSidebar();
+      if(!closed){
+        const si = document.getElementById('search-input');
+        if(si && si.value){ si.value = ''; State.ui.search = ''; document.getElementById('search-clear')?.classList.remove('show'); renderGrid(); }
+        si?.blur();
+      }
+      return;
+    }
+
+    if(typing) return;
+    const anyOpen = !!document.querySelector('.overlay.open');
+    if(anyOpen) return;
+
+    switch(e.key){
+      case '/':
+        e.preventDefault();
+        document.getElementById('search-input')?.focus();
+        break;
+      case 'n':
+      case 'N':
+        e.preventDefault();
+        openToolModal();
+        break;
+      case ',':
+        e.preventDefault();
+        openSettings('general');
+        break;
+      case '?':
+        e.preventDefault();
+        openSettings('general');
+        break;
+      case 'f':
+      case 'F':
+        e.preventDefault();
+        State.ui.activeNav = 'favorites';
+        State.ui.search = '';
+        const siF = document.getElementById('search-input'); if(siF) siF.value = '';
+        document.getElementById('search-clear')?.classList.remove('show');
+        closeMobileSidebar();
+        render();
+        break;
+      case 'a':
+      case 'A':
+        e.preventDefault();
+        State.ui.activeNav = 'all';
+        State.ui.search = '';
+        const siA = document.getElementById('search-input'); if(siA) siA.value = '';
+        document.getElementById('search-clear')?.classList.remove('show');
+        closeMobileSidebar();
+        render();
+        break;
+    }
   });
 
   // Favorite toggle & double-click alt path from card (long-press not needed; use small affordance via keyboard 'f' when focused)
