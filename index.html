@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b0f0d'/%3E%3Cpath d='M17 17h30v9H36v22h-8V26H17z' fill='%2334d399'/%3E%3C/svg%3E">
+<link rel="icon" href="logo.png?v=2" sizes="32x32">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111312">
 <title>Toolify —  Tool Library</title>
@@ -74,9 +74,8 @@ a{color:inherit;}
   display:flex; align-items:center; gap:10px; padding:20px 18px 16px 18px; flex-shrink:0;
 }
 .brand-mark{
-  width:30px; height:30px; border-radius:9px; flex-shrink:0;
-  background:linear-gradient(155deg, var(--emerald-400), var(--emerald-700));
-  display:flex; align-items:center; justify-content:center; color:#08150f; font-weight:700; font-size:15px;
+  width:34px; height:34px; border-radius:10px; flex-shrink:0; overflow:hidden;
+  object-fit:contain; background:linear-gradient(155deg, var(--emerald-400), var(--emerald-700));
   box-shadow:0 4px 12px -4px rgba(34,184,118,.5);
 }
 .brand-name{font-size:15px; font-weight:650; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden;}
@@ -377,7 +376,7 @@ a{color:inherit;}
 .reminder-pill{display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-tertiary); padding:5px 10px; background:var(--bg-elev-3); border-radius:20px;}
 
 .about-block{text-align:left;}
-.about-mark{width:44px; height:44px; border-radius:13px; background:linear-gradient(155deg, var(--emerald-400), var(--emerald-700)); display:flex; align-items:center; justify-content:center; color:#08150f; font-weight:700; font-size:20px; margin-bottom:14px;}
+.about-mark{width:48px; height:48px; border-radius:15px; overflow:hidden; object-fit:contain; background:linear-gradient(155deg, var(--emerald-400), var(--emerald-700)); margin-bottom:14px;}
 .about-block h4{font-size:16px; font-weight:650; margin-bottom:4px;}
 .about-block p{font-size:12.5px; color:var(--text-secondary); line-height:1.6; margin-bottom:10px; max-width:620px;}
 .about-meta{font-size:11.5px; color:var(--text-tertiary); margin-top:16px;}
@@ -414,7 +413,7 @@ a{color:inherit;}
 #auth-screen{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:22px;overflow:auto}
 .auth-card{width:min(100%,420px);background:var(--bg-elev-1);border:1px solid var(--border-med);border-radius:20px;padding:30px;box-shadow:var(--shadow-modal)}
 .auth-brand{display:flex;align-items:center;gap:11px;margin-bottom:25px;font-size:19px;font-weight:700}
-.auth-brand-mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(155deg,var(--emerald-400),var(--emerald-700));display:grid;place-items:center;color:#08150f;font-weight:800}
+.auth-brand-mark{width:42px;height:42px;border-radius:12px;overflow:hidden;object-fit:contain;background:linear-gradient(155deg,var(--emerald-400),var(--emerald-700));}
 .auth-card h1{font-size:23px;letter-spacing:-.03em;margin-bottom:6px}.auth-sub{color:var(--text-secondary);font-size:13px;margin-bottom:22px;line-height:1.5}
 .auth-field{margin-bottom:13px}.auth-field label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}.auth-field input{width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--border-med);background:var(--bg-elev-2);color:var(--text-primary);font-size:14px}
 .password-wrap{position:relative;}
@@ -476,7 +475,7 @@ a{color:inherit;}
 
 <section id="auth-screen">
   <div class="auth-card">
-    <div class="auth-brand"><div class="auth-brand-mark">T</div>Toolify</div>
+    <div class="auth-brand"><img class="auth-brand-mark" src="logo.png?v=2" alt="Toolify">Toolify</div>
     <h1 id="auth-title">Welcome back</h1>
     <p class="auth-sub" id="auth-sub">Sign in to access your personal cloud-synced tool library.</p>
     <form id="auth-form">
@@ -494,7 +493,7 @@ a{color:inherit;}
   <!-- ============ SIDEBAR ============ -->
   <aside id="sidebar">
     <div class="brand">
-      <div class="brand-mark">T</div>
+      <img class="brand-mark" src="logo.png?v=2" alt="Toolify">
       <div class="brand-name">Toolify</div>
     </div>
     <nav class="sidebar-scroll" id="sidebar-nav">
@@ -1819,7 +1818,7 @@ function renderSettingsPanel(panelName){
   else if(panelName === 'about'){
     panel.innerHTML = `
       <div class="about-block">
-        <div class="about-mark">T</div>
+        <img class="about-mark" src="logo.png?v=2" alt="Toolify">
         <h4>Toolify</h4>
         <p>Your Tools. Your Workspace. Your Productivity.</p>
         <p>Toolify is a personal tool management and productivity platform designed to help you organize, manage, and access all your essential digital tools in one centralized workspace.</p>
@@ -2115,6 +2114,7 @@ function wireEvents(){
 
   // Sidebar collapse
   document.getElementById('btn-collapse').addEventListener('click', ()=>{
+    if(window.innerWidth <= 860){ closeMobileSidebar(); return; }
     document.getElementById('sidebar').classList.toggle('collapsed');
   });
   document.getElementById('btn-mobile-menu').addEventListener('click', ()=>{
@@ -2240,7 +2240,7 @@ function wireEvents(){
 let authMode='login';
 function authMessage(message,isError=false){const el=document.getElementById('auth-message');el.textContent=message;el.classList.toggle('error',isError);}
 function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit');document.getElementById('auth-confirm-wrap').style.display=mode==='signup'?'block':'none';document.getElementById('auth-new-wrap').style.display=mode==='recovery'?'block':'none';document.getElementById('auth-password-wrap').style.display=(mode==='recovery'||mode==='forgot')?'none':'block';document.getElementById('auth-password').required=mode!=='recovery'&&mode!=='forgot';document.getElementById('auth-confirm').required=mode==='signup';document.getElementById('auth-new-password').required=mode==='recovery';document.getElementById('auth-toggle').style.display=mode==='recovery'?'none':'inline';document.getElementById('auth-forgot').style.display=mode==='recovery'||mode==='signup'?'none':'inline';title.textContent=mode==='signup'?'Create your account':mode==='forgot'?'Reset your password':mode==='recovery'?'Choose a new password':'Welcome back';sub.textContent=mode==='signup'?'Create an account to keep your tools synced securely.':mode==='forgot'?'We will email you a secure password reset link.':mode==='recovery'?'Set a new password for your Toolify account.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=mode==='signup'?'Create account':mode==='forgot'?'Send reset link':mode==='recovery'?'Update password':'Sign in';authMessage('');}
-async function showAuthenticatedApp(user){currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click'};document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('account-signout').title=user.email||'Signed in';try{await DB.open();await DB.syncForUser(user);await initAppData();}catch(e){console.error(e);authMessage('Cloud sync failed: '+(e.message||'Check your Supabase tables and RLS policies.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
+async function showAuthenticatedApp(user){if(currentUser && currentUser.id === user.id) return;currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click'};document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('account-signout').title=user.email||'Signed in';try{await DB.open();await DB.syncForUser(user);await initAppData();}catch(e){console.error(e);authMessage('Cloud sync failed: '+(e.message||'Check your Supabase tables and RLS policies.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
 async function initAppData(){try{const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);}catch(e){toast('Could not load saved data','error');}ensureUncategorized();const ids=new Set(State.categories.map(c=>c.id));let fixed=false;State.tools.forEach(t=>{if(!ids.has(t.categoryId)){t.categoryId=UNCATEGORIZED_ID;fixed=true;}});if(fixed)await DB.bulkPut('tools',State.tools);if(!State.categories.length)ensureUncategorized();await DB.bulkPut('categories',State.categories);applyTheme();State.ui.activeNav=State.tools.some(t=>t.favorite)?'favorites':'all';wireEvents();render();}
 async function init(){
   await DB.open();
@@ -2248,6 +2248,8 @@ async function init(){
   if(session?.user){await showAuthenticatedApp(session.user);}else{document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}
   supabaseClient.auth.onAuthStateChange(async(event,session)=>{
     if(event==='PASSWORD_RECOVERY'){setAuthMode('recovery');document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';return;}
+    if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'){if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}return;}
+    if(event==='SIGNED_OUT'){if(currentUser){currentUser=null;await DB.clearLocal();document.getElementById('app').style.display='none';document.getElementById('auth-screen').style.display='flex';setAuthMode('login');}return;}
     if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}else if(!session?.user&&currentUser){currentUser=null;await DB.clearLocal();document.getElementById('app').style.display='none';document.getElementById('auth-screen').style.display='flex';setAuthMode('login');}
   });
 }
@@ -2287,6 +2289,7 @@ document.getElementById('account-signout').addEventListener('click',async()=>{aw
 // Service Worker registration (offline + auto-update)
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').then((reg)=>{
+    reg.update();
     reg.addEventListener('updatefound',()=>{
       const newWorker=reg.installing;
       if(!newWorker)return;
