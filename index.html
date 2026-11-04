@@ -703,7 +703,13 @@ const MAX_SNAPSHOTS = 5;
 const SUPABASE_URL = "https://ihlqghvdfunsfdnlaoks.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_roUVfR56-WA4eDay7bN_kg_g3mb2PwX";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+    storageKey: 'toolify-auth'
+  }
 });
 let currentUser = null;
 let cloudSyncBusy = false;
@@ -2216,6 +2222,7 @@ function wireEvents(){
    21. AUTHENTICATION + INIT
    ============================================================ */
 let authMode='login';
+let manualSignOut=false;
 function authMessage(message,isError=false){const el=document.getElementById('auth-message');el.textContent=message;el.classList.toggle('error',isError);}
 function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit');document.getElementById('auth-confirm-wrap').style.display=mode==='signup'?'block':'none';document.getElementById('auth-new-wrap').style.display=mode==='recovery'?'block':'none';document.getElementById('auth-password-wrap').style.display=(mode==='recovery'||mode==='forgot')?'none':'block';document.getElementById('auth-password').required=mode!=='recovery'&&mode!=='forgot';document.getElementById('auth-confirm').required=mode==='signup';document.getElementById('auth-new-password').required=mode==='recovery';document.getElementById('auth-toggle').style.display=mode==='recovery'?'none':'inline';document.getElementById('auth-forgot').style.display=mode==='recovery'||mode==='signup'?'none':'inline';title.textContent=mode==='signup'?'Create your account':mode==='forgot'?'Reset your password':mode==='recovery'?'Choose a new password':'Welcome back';sub.textContent=mode==='signup'?'Create an account to keep your tools synced securely.':mode==='forgot'?'We will email you a secure password reset link.':mode==='recovery'?'Set a new password for your Toolify account.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=mode==='signup'?'Create account':mode==='forgot'?'Send reset link':mode==='recovery'?'Update password':'Sign in';authMessage('');}
 async function showAuthenticatedApp(user){if(currentUser && currentUser.id === user.id) return;currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click'};document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('account-signout').title=user.email||'Signed in';try{await DB.open();await DB.syncForUser(user);await initAppData();}catch(e){console.error(e);authMessage('Cloud sync failed: '+(e.message||'Check your Supabase tables and RLS policies.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
@@ -2226,9 +2233,13 @@ async function init(){
   if(session?.user){await showAuthenticatedApp(session.user);}else{document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}
   supabaseClient.auth.onAuthStateChange(async(event,session)=>{
     if(event==='PASSWORD_RECOVERY'){setAuthMode('recovery');document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';return;}
+    if(event==='TOKEN_REFRESH_FAILED'){await supabaseClient.auth.refreshSession().catch(()=>{});return;}
     if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'){if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}return;}
-    if(event==='SIGNED_OUT'){if(currentUser){currentUser=null;await DB.clearLocal();document.getElementById('app').style.display='none';document.getElementById('auth-screen').style.display='flex';setAuthMode('login');}return;}
-    if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}else if(!session?.user&&currentUser){currentUser=null;await DB.clearLocal();document.getElementById('app').style.display='none';document.getElementById('auth-screen').style.display='flex';setAuthMode('login');}
+    if(event==='SIGNED_OUT'){
+      if(manualSignOut){manualSignOut=false;if(currentUser){currentUser=null;await DB.clearLocal();document.getElementById('app').style.display='none';document.getElementById('auth-screen').style.display='flex';setAuthMode('login');}}
+      return;
+    }
+    if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}
   });
 }
 document.getElementById('auth-form').addEventListener('submit',async e=>{
@@ -2262,7 +2273,11 @@ document.querySelectorAll('.password-toggle').forEach(btn=>{
       : '<svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>';
   });
 });
-document.getElementById('account-signout').addEventListener('click',async()=>{await supabaseClient.auth.signOut();});
+document.getElementById('account-signout').addEventListener('click',async()=>{
+  manualSignOut=true;
+  const {error}=await supabaseClient.auth.signOut();
+  if(error){manualSignOut=false;toast('Could not sign out','error');}
+});
 
 // Service Worker registration (offline + auto-update)
 if('serviceWorker' in navigator){

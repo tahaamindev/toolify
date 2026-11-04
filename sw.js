@@ -1,7 +1,7 @@
 // ============================================================
 // TOOLIFY — Service Worker (Offline + Auto-Update)
 // ============================================================
-const CACHE_NAME = 'toolify-v6';
+const CACHE_NAME = 'toolify-v7';
 const APP_SHELL = ['./', './index.html'];
 
 // Install: cache the app shell
