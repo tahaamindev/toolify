@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="logo.png?v=2" sizes="32x32">
+<link rel="icon" href="logo.png?v=3" sizes="any">
+<link rel="apple-touch-icon" href="logo.png?v=3">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111312">
 <title>Toolify —  Tool Library</title>
@@ -75,8 +76,7 @@ a{color:inherit;}
 }
 .brand-mark{
   width:34px; height:34px; border-radius:10px; flex-shrink:0; overflow:hidden;
-  object-fit:contain; background:linear-gradient(155deg, var(--emerald-400), var(--emerald-700));
-  box-shadow:0 4px 12px -4px rgba(34,184,118,.5);
+  object-fit:contain; background:transparent;
 }
 .brand-name{font-size:15px; font-weight:650; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden;}
 #sidebar.collapsed .brand-name, #sidebar.collapsed .nav-label, #sidebar.collapsed .nav-count, #sidebar.collapsed .sidebar-section-title{
@@ -236,10 +236,10 @@ a{color:inherit;}
 .compact-mode .tool-card{display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 8px; border-radius:var(--radius-md); min-height:76px; gap:0; position:relative; overflow:hidden;}
 .compact-mode .tool-icon{width:42px; height:42px; border-radius:10px;}
 .compact-mode .card-top{margin:0;}
-.compact-mode .compact-name{font-size:11px; font-weight:600; color:var(--text-primary); text-align:center; width:100%; margin-top:0; max-height:0; opacity:0; transform:translateY(4px); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; transition:max-height var(--dur-med) var(--ease), opacity var(--dur-fast) var(--ease), transform var(--dur-med) var(--ease), margin-top var(--dur-med) var(--ease);}
+.compact-mode .compact-name{position:absolute; bottom:8px; left:6px; right:6px; font-size:11px; font-weight:600; color:var(--text-primary); text-align:center; margin:0; opacity:0; transform:translateY(6px); white-space:nowrap; text-overflow:ellipsis; overflow:hidden; transition:opacity var(--dur-fast) var(--ease), transform var(--dur-med) var(--ease);}
 .compact-mode .tool-card:hover .compact-name,
 .compact-mode .tool-card:focus .compact-name,
-.compact-mode .tool-card:focus-visible .compact-name{max-height:20px; opacity:1; transform:translateY(0); margin-top:6px;}
+.compact-mode .tool-card:focus-visible .compact-name{opacity:1; transform:translateY(0);}
 
 .empty-state{
   display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
@@ -376,7 +376,7 @@ a{color:inherit;}
 .reminder-pill{display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-tertiary); padding:5px 10px; background:var(--bg-elev-3); border-radius:20px;}
 
 .about-block{text-align:left;}
-.about-mark{width:48px; height:48px; border-radius:15px; overflow:hidden; object-fit:contain; background:linear-gradient(155deg, var(--emerald-400), var(--emerald-700)); margin-bottom:14px;}
+.about-mark{width:48px; height:48px; border-radius:15px; overflow:hidden; object-fit:contain; background:transparent; margin-bottom:14px;}
 .about-block h4{font-size:16px; font-weight:650; margin-bottom:4px;}
 .about-block p{font-size:12.5px; color:var(--text-secondary); line-height:1.6; margin-bottom:10px; max-width:620px;}
 .about-meta{font-size:11.5px; color:var(--text-tertiary); margin-top:16px;}
@@ -413,7 +413,7 @@ a{color:inherit;}
 #auth-screen{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:22px;overflow:auto}
 .auth-card{width:min(100%,420px);background:var(--bg-elev-1);border:1px solid var(--border-med);border-radius:20px;padding:30px;box-shadow:var(--shadow-modal)}
 .auth-brand{display:flex;align-items:center;gap:11px;margin-bottom:25px;font-size:19px;font-weight:700}
-.auth-brand-mark{width:42px;height:42px;border-radius:12px;overflow:hidden;object-fit:contain;background:linear-gradient(155deg,var(--emerald-400),var(--emerald-700));}
+.auth-brand-mark{width:42px;height:42px;border-radius:12px;overflow:hidden;object-fit:contain;background:transparent;}
 .auth-card h1{font-size:23px;letter-spacing:-.03em;margin-bottom:6px}.auth-sub{color:var(--text-secondary);font-size:13px;margin-bottom:22px;line-height:1.5}
 .auth-field{margin-bottom:13px}.auth-field label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}.auth-field input{width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--border-med);background:var(--bg-elev-2);color:var(--text-primary);font-size:14px}
 .password-wrap{position:relative;}
@@ -475,7 +475,7 @@ a{color:inherit;}
 
 <section id="auth-screen">
   <div class="auth-card">
-    <div class="auth-brand"><img class="auth-brand-mark" src="logo.png?v=2" alt="Toolify">Toolify</div>
+    <div class="auth-brand"><img class="auth-brand-mark" src="logo.png?v=3" alt="Toolify">Toolify</div>
     <h1 id="auth-title">Welcome back</h1>
     <p class="auth-sub" id="auth-sub">Sign in to access your personal cloud-synced tool library.</p>
     <form id="auth-form">
@@ -493,7 +493,7 @@ a{color:inherit;}
   <!-- ============ SIDEBAR ============ -->
   <aside id="sidebar">
     <div class="brand">
-      <img class="brand-mark" src="logo.png?v=2" alt="Toolify">
+      <img class="brand-mark" src="logo.png?v=3" alt="Toolify">
       <div class="brand-name">Toolify</div>
     </div>
     <nav class="sidebar-scroll" id="sidebar-nav">
@@ -1088,7 +1088,6 @@ function renderGrid(){
     const tool = State.tools.find(t=>t.id===id);
     card.addEventListener('click', ()=> openTool(tool));
     card.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTool(tool); } });
-    attachTilt(card);
   });
 }
 
@@ -1101,27 +1100,6 @@ function openTool(tool){
   if(State.settings.sort === 'recent') render();
 }
 
-/* ---- subtle 3D tilt on hover ---- */
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-function attachTilt(card){
-  if(reduceMotion || State.settings.view === 'list' || State.settings.view === 'compact') return;
-  let raf = null;
-  function onMove(e){
-    const rect = card.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    if(raf) cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(()=>{
-      card.style.transform = `perspective(900px) rotateX(${(-y*4).toFixed(2)}deg) rotateY(${(x*4).toFixed(2)}deg) translateY(-3px)`;
-    });
-  }
-  function onLeave(){
-    if(raf) cancelAnimationFrame(raf);
-    card.style.transform = 'perspective(900px) rotateX(0) rotateY(0) translateY(0)';
-  }
-  card.addEventListener('mousemove', onMove);
-  card.addEventListener('mouseleave', onLeave);
-}
 
 /* ============================================================
    10. MASTER RENDER
@@ -1818,7 +1796,7 @@ function renderSettingsPanel(panelName){
   else if(panelName === 'about'){
     panel.innerHTML = `
       <div class="about-block">
-        <img class="about-mark" src="logo.png?v=2" alt="Toolify">
+        <img class="about-mark" src="logo.png?v=3" alt="Toolify">
         <h4>Toolify</h4>
         <p>Your Tools. Your Workspace. Your Productivity.</p>
         <p>Toolify is a personal tool management and productivity platform designed to help you organize, manage, and access all your essential digital tools in one centralized workspace.</p>
