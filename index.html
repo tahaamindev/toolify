@@ -410,12 +410,22 @@ a{color:inherit;}
 
 
 /* CLOUD AUTH */
-#auth-screen{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:22px;overflow:auto}
-.auth-card{width:min(100%,420px);background:var(--bg-elev-1);border:1px solid var(--border-med);border-radius:20px;padding:30px;box-shadow:var(--shadow-modal)}
-.auth-brand{display:flex;align-items:center;gap:11px;margin-bottom:25px;font-size:19px;font-weight:700}
-.auth-brand-mark{width:42px;height:42px;border-radius:12px;overflow:hidden;object-fit:contain;background:transparent;}
-.auth-card h1{font-size:23px;letter-spacing:-.03em;margin-bottom:6px}.auth-sub{color:var(--text-secondary);font-size:13px;margin-bottom:22px;line-height:1.5}
-.auth-field{margin-bottom:13px}.auth-field label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}.auth-field input{width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--border-med);background:var(--bg-elev-2);color:var(--text-primary);font-size:14px}
+#auth-screen{position:fixed;inset:0;z-index:500;display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,46%);background:var(--bg);overflow:hidden;color:var(--text-primary)}
+.auth-nav{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:min(calc(100% - 36px),1120px);height:58px;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:0 10px 0 16px;border:1px solid var(--border-subtle);border-radius:14px;background:color-mix(in srgb,var(--bg-elev-1) 88%,transparent);backdrop-filter:blur(18px);box-shadow:var(--shadow-card)}
+.auth-nav-brand{display:flex;align-items:center;gap:9px;font-weight:700;text-decoration:none}.auth-nav-brand img{width:30px;height:30px;object-fit:contain}
+.auth-nav-links{display:flex;align-items:center;gap:4px}.auth-nav-links button,.auth-nav-links a{height:36px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--text-secondary);text-decoration:none;font-size:13px;font-weight:600;display:inline-flex;align-items:center}.auth-nav-links button:hover,.auth-nav-links a:hover{background:var(--bg-elev-3);color:var(--text-primary)}
+.auth-nav-links .auth-nav-download{background:var(--accent-strong);color:#08150f}.auth-nav-links .auth-nav-download:hover{background:var(--accent);color:#08150f}
+.auth-showcase{position:relative;margin-top:76px;min-height:0;background:linear-gradient(90deg,rgba(7,10,9,.35),rgba(7,10,9,.72)),url('back.png?v=3') center/cover;display:flex;align-items:flex-end;padding:7.5vh 6vw 8vh}
+.auth-showcase::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.45))}
+.auth-showcase-content{position:relative;z-index:1;max-width:520px;color:#fff}.auth-kicker{display:inline-flex;padding:6px 10px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(10,14,12,.45);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:18px;backdrop-filter:blur(10px)}
+.auth-showcase h2{font-size:clamp(34px,4vw,58px);line-height:.98;letter-spacing:-.045em;margin-bottom:16px}.auth-showcase p{max-width:470px;color:rgba(255,255,255,.78);font-size:15px;line-height:1.65}
+.auth-download-card{display:flex;align-items:center;gap:12px;margin-top:24px;width:max-content;padding:10px 12px;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(13,16,15,.7);backdrop-filter:blur(12px)}
+.auth-download-card button{height:38px;padding:0 14px;border:0;border-radius:8px;background:var(--accent-strong);color:#08150f;font-weight:700}.auth-download-card span{font-size:12px;color:rgba(255,255,255,.72)}
+.auth-panel{position:relative;display:flex;align-items:center;justify-content:center;padding:105px 7vw 36px;background:var(--bg)}
+.auth-card{width:min(100%,430px);border:1px solid var(--border-subtle);border-radius:20px;padding:32px;background:color-mix(in srgb,var(--bg-elev-1) 96%,transparent);box-shadow:var(--shadow-modal)}
+.auth-brand{display:none}.auth-brand-mark{width:42px;height:42px;border-radius:12px;overflow:hidden;object-fit:contain;background:transparent;}
+.auth-card h1{font-size:28px;letter-spacing:-.035em;margin-bottom:7px}.auth-sub{color:var(--text-secondary);font-size:13px;margin-bottom:22px;line-height:1.55}
+.auth-field{margin-bottom:13px}.auth-field label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}.auth-field input{width:100%;height:43px;padding:11px 12px;border-radius:8px;border:1px solid var(--border-med);background:var(--bg-elev-2);color:var(--text-primary);font-size:14px}
 .password-wrap{position:relative;}
 .password-wrap input{padding-right:40px;}
 .password-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--text-tertiary);cursor:pointer;padding:6px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
@@ -424,6 +434,10 @@ a{color:inherit;}
 .auth-actions{display:flex;gap:8px;margin-top:17px}.auth-actions button{flex:1;padding:11px;border:1px solid var(--border-med);border-radius:8px;font-weight:650}.auth-primary{background:var(--accent-strong);color:#08150f;border-color:transparent!important}.auth-secondary{background:transparent;color:var(--text-primary)}
 .auth-links{display:flex;justify-content:space-between;gap:12px;margin-top:16px;font-size:12px;color:var(--text-secondary)}.auth-links button{background:none;border:0;color:var(--accent);font:inherit;cursor:pointer}.auth-message{font-size:12px;line-height:1.5;margin-top:14px;color:var(--text-secondary);min-height:18px}.auth-message.error{color:var(--danger)}
 #account-signout{padding:7px 10px;border:1px solid var(--border-subtle);border-radius:8px;background:var(--bg-elev-2);color:var(--text-secondary);font-size:12px}
+.public-page{position:fixed;inset:0;z-index:600;background:var(--bg);color:var(--text-primary);overflow:auto;display:none}
+.public-page.open{display:block}.public-page-nav{position:sticky;top:0;height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 max(24px,calc((100vw - 1120px)/2));border-bottom:1px solid var(--border-subtle);background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(16px)}
+.public-page-nav .auth-nav-brand{color:var(--text-primary)}.public-page-nav button{border:1px solid var(--border-subtle);border-radius:8px;padding:8px 12px;background:var(--bg-elev-2);color:var(--text-primary)}
+.public-page-content{width:min(1120px,calc(100% - 40px));margin:70px auto 90px}.public-page-content .about-block{max-width:760px}.public-page-content .about-block h1{font-size:42px;margin-bottom:10px}.public-page-content .about-block h4{font-size:22px}.public-page-content .about-mark{width:58px;height:58px}
 
 /* ============================================================
    KEYBOARD SHORTCUTS (settings display)
@@ -437,6 +451,12 @@ a{color:inherit;}
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+@media (max-width: 860px){
+  #auth-screen{grid-template-columns:1fr;overflow:auto;background:linear-gradient(rgba(8,10,9,.78),rgba(8,10,9,.92)),url('back.png?v=3') center/cover}
+  .auth-nav{top:10px;width:calc(100% - 20px);height:54px}.auth-nav-links button:not(.auth-nav-download),.auth-nav-links a{display:none}.auth-nav-links .auth-nav-download{padding:0 10px;font-size:12px}
+  .auth-showcase{display:none}.auth-panel{grid-column:1;padding:82px 16px 28px;background:transparent;min-height:100vh}.auth-card{width:min(100%,430px);padding:26px 22px;background:color-mix(in srgb,var(--bg-elev-1) 94%,transparent)}
+  .public-page-content{width:calc(100% - 32px);margin-top:42px}.public-page-nav{padding:0 16px}.public-page-nav button{font-size:12px}.public-page-content .about-block h1{font-size:34px}
+}
 @media (max-width: 860px){
   #sidebar{position:fixed; z-index:80; height:100vh; width:230px; transform:translateX(-100%); transition:transform var(--dur-med) var(--ease);}
   #sidebar.mobile-open{transform:translateX(0); box-shadow:0 0 0 2000px rgba(0,0,0,.4);}
@@ -474,20 +494,49 @@ a{color:inherit;}
 <body>
 
 <section id="auth-screen">
-  <div class="auth-card">
-    <div class="auth-brand"><img class="auth-brand-mark" src="logo.png?v=3" alt="Toolify">Toolify</div>
-    <h1 id="auth-title">Welcome back</h1>
-    <p class="auth-sub" id="auth-sub">Sign in to access your personal cloud-synced tool library.</p>
-    <form id="auth-form">
-      <div class="auth-field"><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
-      <div class="auth-field" id="auth-password-wrap"><label for="auth-password">Password</label><div class="password-wrap"><input id="auth-password" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters"><button type="button" class="password-toggle" data-target="auth-password" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
-      <div class="auth-field" id="auth-confirm-wrap" style="display:none"><label for="auth-confirm">Confirm password</label><div class="password-wrap"><input id="auth-confirm" type="password" autocomplete="new-password" minlength="6" placeholder="Repeat password"><button type="button" class="password-toggle" data-target="auth-confirm" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
-      <div class="auth-field" id="auth-new-wrap" style="display:none"><label for="auth-new-password">New password</label><div class="password-wrap"><input id="auth-new-password" type="password" autocomplete="new-password" minlength="6" placeholder="New password"><button type="button" class="password-toggle" data-target="auth-new-password" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
-      <div class="auth-actions"><button class="auth-primary" id="auth-submit" type="submit">Sign in</button></div>
-    </form>
-    <div class="auth-links"><button type="button" id="auth-toggle">Create account</button><button type="button" id="auth-forgot">Forgot password?</button></div>
-    <div class="auth-message" id="auth-message" role="status"></div>
+  <nav class="auth-nav" aria-label="Toolify navigation">
+    <a class="auth-nav-brand" href="#" aria-label="Toolify home"><img src="logo.png?v=3" alt="">Toolify</a>
+    <div class="auth-nav-links">
+      <button type="button" data-public-page="about">About</button>
+      <a href="mailto:tahaamin.dev@gmail.com">Contact</a>
+      <button type="button" class="auth-nav-download" data-download-app>Download App</button>
+    </div>
+  </nav>
+  <div class="auth-showcase">
+    <div class="auth-showcase-content">
+      <span class="auth-kicker">Your digital workspace</span>
+      <h2>Every tool.<br>One place.</h2>
+      <p>Organize your favorite tools, keep your workspace synced, and stay productive across every device.</p>
+      <div class="auth-download-card">
+        <button type="button" data-download-app>Download Toolify</button>
+        <span id="auth-platform-label">Available for Windows</span>
+      </div>
+    </div>
   </div>
+  <div class="auth-panel">
+    <div class="auth-card">
+      <div class="auth-brand"><img class="auth-brand-mark" src="logo.png?v=3" alt="Toolify">Toolify</div>
+      <h1 id="auth-title">Welcome back</h1>
+      <p class="auth-sub" id="auth-sub">Sign in to access your personal cloud-synced tool library.</p>
+      <form id="auth-form">
+        <div class="auth-field"><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
+        <div class="auth-field" id="auth-password-wrap"><label for="auth-password">Password</label><div class="password-wrap"><input id="auth-password" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters"><button type="button" class="password-toggle" data-target="auth-password" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
+        <div class="auth-field" id="auth-confirm-wrap" style="display:none"><label for="auth-confirm">Confirm password</label><div class="password-wrap"><input id="auth-confirm" type="password" autocomplete="new-password" minlength="6" placeholder="Repeat password"><button type="button" class="password-toggle" data-target="auth-confirm" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
+        <div class="auth-field" id="auth-new-wrap" style="display:none"><label for="auth-new-password">New password</label><div class="password-wrap"><input id="auth-new-password" type="password" autocomplete="new-password" minlength="6" placeholder="New password"><button type="button" class="password-toggle" data-target="auth-new-password" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
+        <div class="auth-actions"><button class="auth-primary" id="auth-submit" type="submit">Sign in</button></div>
+      </form>
+      <div class="auth-links"><button type="button" id="auth-toggle">Create account</button><button type="button" id="auth-forgot">Forgot password?</button></div>
+      <div class="auth-message" id="auth-message" role="status"></div>
+    </div>
+  </div>
+</section>
+
+<section id="public-page" class="public-page" aria-hidden="true">
+  <nav class="public-page-nav">
+    <a class="auth-nav-brand" href="#" aria-label="Toolify home"><img src="logo.png?v=3" alt="">Toolify</a>
+    <button type="button" data-close-public-page>Back to login</button>
+  </nav>
+  <main class="public-page-content" id="public-page-content"></main>
 </section>
 <div id="app" style="display:none">
   <!-- ============ SIDEBAR ============ -->
@@ -2261,6 +2310,79 @@ document.getElementById('auth-form').addEventListener('submit',async e=>{
 });
 document.getElementById('auth-toggle').addEventListener('click',()=>setAuthMode(authMode==='signup'?'login':'signup'));
 document.getElementById('auth-forgot').addEventListener('click',()=>setAuthMode('forgot'));
+const authPage = document.getElementById('auth-screen');
+const publicPage = document.getElementById('public-page');
+const publicPageContent = document.getElementById('public-page-content');
+
+function downloadToolify() {
+  const userAgent = navigator.userAgent || navigator.vendor || '';
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
+  const file = isMobile && /Android/i.test(userAgent) ? 'Toolify.apk' : 'ToolifySetup.exe';
+
+  fetch(file, {method:'HEAD', cache:'no-store'})
+    .then(response => {
+      if(!response.ok) throw new Error('Installer not found');
+      const link = document.createElement('a');
+      link.href = file;
+      link.download = file;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    })
+    .catch(() => toast(isMobile ? 'Android installer is not available yet.' : 'Desktop installer is not available yet.', 'error'));
+}
+
+function showPublicAbout() {
+  publicPageContent.innerHTML = `
+    <div class="about-block">
+      <img class="about-mark" src="logo.png?v=3" alt="Toolify">
+      <h1>About Toolify</h1>
+      <h4>Your Tools. Your Workspace. Your Productivity.</h4>
+      <p>Toolify is a personal tool management and productivity platform that brings your essential digital tools into one organized workspace.</p>
+      <div class="about-section">
+        <h5>What Makes Toolify Special</h5>
+        <ul class="about-list">
+          <li><strong>Personal Tool Library</strong> — Save and organize frequently used tools.</li>
+          <li><strong>Smart Categories</strong> — Keep your workspace clean and structured.</li>
+          <li><strong>Cloud Sync</strong> — Access your tools across your devices.</li>
+          <li><strong>Private Accounts</strong> — Keep your workspace secure and personal.</li>
+          <li><strong>Backup &amp; Recovery</strong> — Export and restore your library whenever needed.</li>
+        </ul>
+      </div>
+      <div class="about-section">
+        <h5>Developer</h5>
+        <p>Designed and developed by <strong>TAHA AMIN</strong>, with a focus on practical, accessible, and modern productivity software.</p>
+        <div class="about-links">
+          <a class="about-link" href="https://github.com/tahaamindev" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a class="about-link" href="https://tahaamindev.github.io/TAHA/" target="_blank" rel="noopener noreferrer">Portfolio</a>
+        </div>
+      </div>
+      <div class="about-section">
+        <h5>Contact</h5>
+        <p><a class="about-link" href="mailto:tahaamin.dev@gmail.com">tahaamin.dev@gmail.com</a></p>
+      </div>
+      <div class="about-meta">Version ${typeof APP_VERSION !== 'undefined' ? APP_VERSION : '0.1.0'} · Web Application · Backend: Supabase · Hosting: GitHub Pages</div>
+    </div>`;
+  authPage.setAttribute('aria-hidden', 'true');
+  publicPage.classList.add('open');
+  publicPage.setAttribute('aria-hidden', 'false');
+  publicPage.scrollTop = 0;
+}
+
+function closePublicPage() {
+  publicPage.classList.remove('open');
+  publicPage.setAttribute('aria-hidden', 'true');
+  authPage.setAttribute('aria-hidden', 'false');
+}
+
+document.querySelectorAll('[data-public-page="about"]').forEach(button => button.addEventListener('click', showPublicAbout));
+document.querySelectorAll('[data-close-public-page]').forEach(button => button.addEventListener('click', closePublicPage));
+document.querySelectorAll('[data-download-app]').forEach(button => button.addEventListener('click', downloadToolify));
+
+if(/Android/i.test(navigator.userAgent)) document.getElementById('auth-platform-label').textContent = 'Available for Android';
+else if(/iPhone|iPad|iPod/i.test(navigator.userAgent)) document.getElementById('auth-platform-label').textContent = 'Android & Windows available';
+else document.getElementById('auth-platform-label').textContent = 'Available for Windows';
+
 document.querySelectorAll('.password-toggle').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     const input = document.getElementById(btn.dataset.target);
