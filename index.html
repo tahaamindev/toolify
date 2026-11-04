@@ -509,7 +509,7 @@ a{color:inherit;}
       <p>Organize your favorite tools, keep your workspace synced, and stay productive across every device.</p>
       <div class="auth-download-card">
         <button type="button" data-download-app>Download Toolify</button>
-        <span id="auth-platform-label">Available for Windows</span>
+        <span id="auth-platform-label">Install with Chrome</span>
       </div>
     </div>
   </div>
@@ -740,7 +740,7 @@ a{color:inherit;}
    ============================================================ */
 const DB_NAME = "toolify-db";
 const DB_VERSION = 1;
-const APP_VERSION = "0.1.0";
+const APP_VERSION = "1.1.0";
 const BACKUP_APP_ID = "toolify";
 const BACKUP_SCHEMA_VERSION = 1;
 const UNCATEGORIZED_ID = "uncategorized";
@@ -1871,7 +1871,7 @@ function renderSettingsPanel(panelName){
         </div>
 
         <div class="about-section">
-          <h5>Available Features — Version 0.1.0</h5>
+          <h5>Available Features — Version 1.1.0</h5>
           <p>Toolify is currently in its initial release, introducing the foundation of a personalized tool management ecosystem.</p>
           <div>
             <span class="about-tag">Account &amp; Authentication</span>
@@ -2314,22 +2314,32 @@ const authPage = document.getElementById('auth-screen');
 const publicPage = document.getElementById('public-page');
 const publicPageContent = document.getElementById('public-page-content');
 
-function downloadToolify() {
-  const userAgent = navigator.userAgent || navigator.vendor || '';
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
-  const file = isMobile && /Android/i.test(userAgent) ? 'Toolify.apk' : 'ToolifySetup.exe';
+let deferredInstallPrompt = null;
 
-  fetch(file, {method:'HEAD', cache:'no-store'})
-    .then(response => {
-      if(!response.ok) throw new Error('Installer not found');
-      const link = document.createElement('a');
-      link.href = file;
-      link.download = file;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    })
-    .catch(() => toast(isMobile ? 'Android installer is not available yet.' : 'Desktop installer is not available yet.', 'error'));
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+});
+
+async function downloadToolify() {
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    return;
+  }
+
+  if(window.matchMedia('(display-mode: standalone)').matches || navigator.standalone){
+    toast('Toolify is already installed.');
+    return;
+  }
+
+  const isChrome = /Chrome|Chromium|EdgA|Edg/i.test(navigator.userAgent) && !/OPR|Opera/i.test(navigator.userAgent);
+  if(isChrome){
+    toast('Open Chrome menu and select "Install Toolify" or "Add to Home screen".');
+  }else{
+    toast('Open Toolify in Chrome to install the app.');
+  }
 }
 
 function showPublicAbout() {
@@ -2361,7 +2371,7 @@ function showPublicAbout() {
         <h5>Contact</h5>
         <p><a class="about-link" href="mailto:tahaamin.dev@gmail.com">tahaamin.dev@gmail.com</a></p>
       </div>
-      <div class="about-meta">Version ${typeof APP_VERSION !== 'undefined' ? APP_VERSION : '0.1.0'} · Web Application · Backend: Supabase · Hosting: GitHub Pages</div>
+      <div class="about-meta">Version ${typeof APP_VERSION !== 'undefined' ? APP_VERSION : '1.1.0'} · Web Application · Backend: Supabase · Hosting: GitHub Pages</div>
     </div>`;
   authPage.setAttribute('aria-hidden', 'true');
   publicPage.classList.add('open');
@@ -2379,9 +2389,7 @@ document.querySelectorAll('[data-public-page="about"]').forEach(button => button
 document.querySelectorAll('[data-close-public-page]').forEach(button => button.addEventListener('click', closePublicPage));
 document.querySelectorAll('[data-download-app]').forEach(button => button.addEventListener('click', downloadToolify));
 
-if(/Android/i.test(navigator.userAgent)) document.getElementById('auth-platform-label').textContent = 'Available for Android';
-else if(/iPhone|iPad|iPod/i.test(navigator.userAgent)) document.getElementById('auth-platform-label').textContent = 'Android & Windows available';
-else document.getElementById('auth-platform-label').textContent = 'Available for Windows';
+document.getElementById('auth-platform-label').textContent = 'Install with Chrome';
 
 document.querySelectorAll('.password-toggle').forEach(btn=>{
   btn.addEventListener('click', ()=>{
