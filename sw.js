@@ -1,8 +1,8 @@
 // ============================================================
 // TOOLIFY — Service Worker (Offline + Auto-Update)
 // ============================================================
-const CACHE_NAME = 'toolify-v9';
-const APP_SHELL = ['./', './index.html'];
+const CACHE_NAME = 'toolify-v10';
+const APP_SHELL = ['./', './index.html', './manifest.json', './logo.png', './logo-192.png', './logo-512.png', './back.png'];
 
 // Install: cache the app shell
 self.addEventListener('install', (event) => {
