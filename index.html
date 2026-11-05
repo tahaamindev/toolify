@@ -2307,7 +2307,16 @@ async function showAuthenticatedApp(user){if(currentUser && currentUser.id === u
 async function initAppData(){try{const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);}catch(e){toast('Could not load saved data','error');}ensureUncategorized();const ids=new Set(State.categories.map(c=>c.id));let fixed=false;State.tools.forEach(t=>{if(!ids.has(t.categoryId)){t.categoryId=UNCATEGORIZED_ID;fixed=true;}});if(fixed)await DB.bulkPut('tools',State.tools);if(!State.categories.length)ensureUncategorized();await DB.bulkPut('categories',State.categories);applyTheme();State.ui.activeNav=State.tools.some(t=>t.favorite)?'favorites':'all';wireEvents();render();}
 async function init(){
   await DB.open();
+  const urlParams=new URLSearchParams(window.location.search);
+  const hashParams=new URLSearchParams(window.location.hash.replace(/^#/,''));
+  const recoveryCode=urlParams.get('code');
+  if(recoveryCode){
+    await supabaseClient.auth.exchangeCodeForSession(recoveryCode);
+  }
   const {data:{session}}=await supabaseClient.auth.getSession();
+  const hashHasRecoveryToken=hashParams.has('access_token');
+  const hashType=hashParams.get('type');
+  const queryType=urlParams.get('type');
   const recoveryParamsPresent=()=>window.location.hash.includes('access_token')||new URLSearchParams(window.location.search).get('type')==='recovery'||new URLSearchParams(window.location.hash.replace(/^#/,'')).get('type')==='recovery';
   supabaseClient.auth.onAuthStateChange(async(event,session)=>{
     const urlParams=new URLSearchParams(window.location.search);
@@ -2322,9 +2331,7 @@ async function init(){
     }
     if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}
   });
-  const urlParams=new URLSearchParams(window.location.search);
-  const hashParams=new URLSearchParams(window.location.hash.replace(/^#/,''));
-  const isPasswordRecovery=urlParams.get('type')==='recovery'||hashParams.get('type')==='recovery'||hashParams.has('access_token');
+  const isPasswordRecovery=queryType==='recovery'||hashType==='recovery'||hashHasRecoveryToken||Boolean(recoveryCode);
   if(isPasswordRecovery&&session?.user){
     document.getElementById('auth-screen').style.display='flex';
     document.getElementById('app').style.display='none';
@@ -2346,7 +2353,8 @@ document.getElementById('auth-form').addEventListener('submit',async e=>{
       authMessage(data.session?'Account created. Loading your library…':'Account created. Check your email and verify your address before signing in.');
       if(data.session)await showAuthenticatedApp(data.user);
     }else if(authMode==='forgot'){
-      const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});if(error)throw error;authMessage('If an account exists for this email, a password reset link has been sent.');
+      const resetRedirect=window.location.origin+window.location.pathname+'?type=recovery';
+      const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:resetRedirect});if(error)throw error;authMessage('If an account exists for this email, a password reset link has been sent.');
     }else if(authMode==='recovery'){
       const next=document.getElementById('auth-new-password').value;if(next.length<6)throw new Error('Password must be at least 6 characters.');const {error}=await supabaseClient.auth.updateUser({password:next});if(error)throw error;authMessage('Password updated. You can now sign in.');setAuthMode('login');
     }else{
