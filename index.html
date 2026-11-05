@@ -265,8 +265,6 @@ a{color:inherit;}
 /* Stacking order: notifications/confirmations must stay above settings */
 #settings-overlay{z-index:100;}
 #confirm-overlay,#reset-overlay,#import-overlay{z-index:150;}
-#reset-password-overlay{z-index:700;}
-#reset-password-overlay{background:var(--bg);}
 .modal{
   background:var(--bg-elev-1); border:1px solid var(--border-med); border-radius:var(--radius-lg); box-shadow:var(--shadow-modal);
   width:100%; max-width:440px; max-height:88vh; display:flex; flex-direction:column; overflow:hidden;
@@ -524,10 +522,9 @@ a{color:inherit;}
         <div class="auth-field"><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
         <div class="auth-field" id="auth-password-wrap"><label for="auth-password">Password</label><div class="password-wrap"><input id="auth-password" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters"><button type="button" class="password-toggle" data-target="auth-password" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
         <div class="auth-field" id="auth-confirm-wrap" style="display:none"><label for="auth-confirm">Confirm password</label><div class="password-wrap"><input id="auth-confirm" type="password" autocomplete="new-password" minlength="6" placeholder="Repeat password"><button type="button" class="password-toggle" data-target="auth-confirm" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
-        <div class="auth-field" id="auth-new-wrap" style="display:none"><label for="auth-new-password">New password</label><div class="password-wrap"><input id="auth-new-password" type="password" autocomplete="new-password" minlength="6" placeholder="New password"><button type="button" class="password-toggle" data-target="auth-new-password" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
         <div class="auth-actions"><button class="auth-primary" id="auth-submit" type="submit">Sign in</button></div>
       </form>
-      <div class="auth-links"><button type="button" id="auth-toggle">Create account</button><button type="button" id="auth-forgot">Forgot password?</button></div>
+      <div class="auth-links"><button type="button" id="auth-toggle">Create account</button></div>
       <div class="auth-message" id="auth-message" role="status"></div>
     </div>
   </div>
@@ -689,32 +686,6 @@ a{color:inherit;}
       <button class="btn btn-ghost" id="reset-cancel">Cancel</button>
       <button class="btn btn-danger-solid" id="reset-ok" disabled>Reset App</button>
     </div>
-  </div>
-</div>
-
-<!-- ============ RESET PASSWORD FROM EMAIL ============ -->
-<div class="overlay" id="reset-password-overlay">
-  <div class="modal" style="max-width:420px;" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
-    <div class="modal-header">
-      <div class="modal-title" id="reset-password-title">Create a new password</div>
-    </div>
-    <form id="reset-password-form">
-      <div class="modal-body">
-        <p style="font-size:13px;color:var(--text-secondary);line-height:1.55;margin-bottom:16px;">Enter your new password twice to finish resetting your account.</p>
-        <div class="field">
-          <label class="field-label" for="reset-password-new">New password</label>
-          <input class="field-input" id="reset-password-new" type="password" autocomplete="new-password" minlength="6" required>
-        </div>
-        <div class="field">
-          <label class="field-label" for="reset-password-confirm">Confirm new password</label>
-          <input class="field-input" id="reset-password-confirm" type="password" autocomplete="new-password" minlength="6" required>
-        </div>
-        <div id="reset-password-message" style="font-size:12px;color:var(--danger);min-height:18px;"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-solid" id="reset-password-submit" type="submit">Update password</button>
-      </div>
-    </form>
   </div>
 </div>
 
@@ -2302,42 +2273,22 @@ function wireEvents(){
 let authMode='login';
 let manualSignOut=false;
 function authMessage(message,isError=false){const el=document.getElementById('auth-message');el.textContent=message;el.classList.toggle('error',isError);}
-function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit');document.getElementById('auth-confirm-wrap').style.display=mode==='signup'?'block':'none';document.getElementById('auth-new-wrap').style.display=mode==='recovery'?'block':'none';document.getElementById('auth-password-wrap').style.display=(mode==='recovery'||mode==='forgot')?'none':'block';document.getElementById('auth-password').required=mode!=='recovery'&&mode!=='forgot';document.getElementById('auth-confirm').required=mode==='signup';document.getElementById('auth-new-password').required=mode==='recovery';document.getElementById('auth-toggle').style.display=mode==='recovery'?'none':'inline';document.getElementById('auth-forgot').style.display=mode==='recovery'||mode==='signup'?'none':'inline';title.textContent=mode==='signup'?'Create your account':mode==='forgot'?'Reset your password':mode==='recovery'?'Choose a new password':'Welcome back';sub.textContent=mode==='signup'?'Create an account to keep your tools synced securely.':mode==='forgot'?'We will email you a secure password reset link.':mode==='recovery'?'Set a new password for your Toolify account.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=mode==='signup'?'Create account':mode==='forgot'?'Send reset link':mode==='recovery'?'Update password':'Sign in';authMessage('');}
+function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit');document.getElementById('auth-confirm-wrap').style.display=mode==='signup'?'block':'none';document.getElementById('auth-password-wrap').style.display='block';document.getElementById('auth-password').required=true;document.getElementById('auth-confirm').required=mode==='signup';title.textContent=mode==='signup'?'Create your account':'Welcome back';sub.textContent=mode==='signup'?'Create an account to keep your tools synced securely.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=mode==='signup'?'Create account':'Sign in';authMessage('');}
 async function showAuthenticatedApp(user){if(currentUser && currentUser.id === user.id) return;currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click'};document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('account-signout').title=user.email||'Signed in';try{await DB.open();await DB.syncForUser(user);await initAppData();}catch(e){console.error(e);authMessage('Cloud sync failed: '+(e.message||'Check your Supabase tables and RLS policies.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
 async function initAppData(){try{const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);}catch(e){toast('Could not load saved data','error');}ensureUncategorized();const ids=new Set(State.categories.map(c=>c.id));let fixed=false;State.tools.forEach(t=>{if(!ids.has(t.categoryId)){t.categoryId=UNCATEGORIZED_ID;fixed=true;}});if(fixed)await DB.bulkPut('tools',State.tools);if(!State.categories.length)ensureUncategorized();await DB.bulkPut('categories',State.categories);applyTheme();State.ui.activeNav=State.tools.some(t=>t.favorite)?'favorites':'all';wireEvents();render();}
 async function init(){
   await DB.open();
-  const urlParams=new URLSearchParams(window.location.search);
-  const hashParams=new URLSearchParams(window.location.hash.replace(/^#/,''));
-  const recoveryCode=urlParams.get('code');
-  if(recoveryCode){
-    await supabaseClient.auth.exchangeCodeForSession(recoveryCode);
-  }
   const {data:{session}}=await supabaseClient.auth.getSession();
-  const hashHasRecoveryToken=hashParams.has('access_token');
-  const hashType=hashParams.get('type');
-  const queryType=urlParams.get('type');
-  const recoveryParamsPresent=()=>window.location.hash.includes('access_token')||new URLSearchParams(window.location.search).get('type')==='recovery'||new URLSearchParams(window.location.hash.replace(/^#/,'')).get('type')==='recovery';
   supabaseClient.auth.onAuthStateChange(async(event,session)=>{
-    const urlParams=new URLSearchParams(window.location.search);
-    const hashParams=new URLSearchParams(window.location.hash.replace(/^#/,''));
-    const isPasswordRecovery=urlParams.get('type')==='recovery'||hashParams.get('type')==='recovery';
-    if(event==='PASSWORD_RECOVERY'||isPasswordRecovery){setAuthMode('recovery');document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';openPasswordResetModal();return;}
     if(event==='TOKEN_REFRESH_FAILED'){await supabaseClient.auth.refreshSession().catch(()=>{});return;}
-    if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'){if(!recoveryParamsPresent()&&session?.user&&!currentUser){await showAuthenticatedApp(session.user);}return;}
+    if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'){if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}return;}
     if(event==='SIGNED_OUT'){
       if(manualSignOut){manualSignOut=false;if(currentUser){currentUser=null;await DB.clearLocal();document.getElementById('app').style.display='none';document.getElementById('auth-screen').style.display='flex';setAuthMode('login');}}
       return;
     }
     if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}
   });
-  const isPasswordRecovery=queryType==='recovery'||hashType==='recovery'||hashHasRecoveryToken||Boolean(recoveryCode);
-  if(isPasswordRecovery&&session?.user){
-    document.getElementById('auth-screen').style.display='flex';
-    document.getElementById('app').style.display='none';
-    setAuthMode('recovery');
-    openPasswordResetModal();
-  }else if(session?.user){
+  if(session?.user){
     await showAuthenticatedApp(session.user);
   }else{
     document.getElementById('auth-screen').style.display='flex';
@@ -2352,45 +2303,12 @@ document.getElementById('auth-form').addEventListener('submit',async e=>{
       const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin+window.location.pathname}});if(error)throw error;
       authMessage(data.session?'Account created. Loading your library…':'Account created. Check your email and verify your address before signing in.');
       if(data.session)await showAuthenticatedApp(data.user);
-    }else if(authMode==='forgot'){
-      const resetRedirect=window.location.origin+window.location.pathname+'?type=recovery';
-      const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:resetRedirect});if(error)throw error;authMessage('If an account exists for this email, a password reset link has been sent.');
-    }else if(authMode==='recovery'){
-      const next=document.getElementById('auth-new-password').value;if(next.length<6)throw new Error('Password must be at least 6 characters.');const {error}=await supabaseClient.auth.updateUser({password:next});if(error)throw error;authMessage('Password updated. You can now sign in.');setAuthMode('login');
     }else{
       const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;await showAuthenticatedApp(data.user);
     }
   }catch(err){authMessage(err.message||'Authentication failed.',true);}finally{submit.disabled=false;}
 });
 document.getElementById('auth-toggle').addEventListener('click',()=>setAuthMode(authMode==='signup'?'login':'signup'));
-document.getElementById('auth-forgot').addEventListener('click',()=>setAuthMode('forgot'));
-function openPasswordResetModal(){
-  document.getElementById('reset-password-new').value='';
-  document.getElementById('reset-password-confirm').value='';
-  document.getElementById('reset-password-message').textContent='';
-  document.getElementById('reset-password-overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('reset-password-new').focus(),100);
-}
-document.getElementById('reset-password-form').addEventListener('submit',async e=>{
-  e.preventDefault();
-  const newPassword=document.getElementById('reset-password-new').value;
-  const confirmPassword=document.getElementById('reset-password-confirm').value;
-  const message=document.getElementById('reset-password-message');
-  const submit=document.getElementById('reset-password-submit');
-  if(newPassword.length<6){message.textContent='Password must be at least 6 characters.';return;}
-  if(newPassword!==confirmPassword){message.textContent='Passwords do not match.';return;}
-  submit.disabled=true;
-  message.style.color='var(--text-secondary)';
-  message.textContent='Updating password…';
-  const {error}=await supabaseClient.auth.updateUser({password:newPassword});
-  submit.disabled=false;
-  if(error){message.style.color='var(--danger)';message.textContent=error.message||'Could not update password.';return;}
-  document.getElementById('reset-password-overlay').classList.remove('open');
-  window.history.replaceState({},document.title,window.location.pathname);
-  setAuthMode('login');
-  authMessage('Password updated successfully. Please sign in.');
-  await supabaseClient.auth.signOut();
-});
 const authPage = document.getElementById('auth-screen');
 const publicPage = document.getElementById('public-page');
 const publicPageContent = document.getElementById('public-page-content');
