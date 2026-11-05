@@ -2307,9 +2307,11 @@ async function initAppData(){try{const [tools,categories,settingsRows]=await Pro
 async function init(){
   await DB.open();
   const {data:{session}}=await supabaseClient.auth.getSession();
-  if(session?.user){await showAuthenticatedApp(session.user);}else{document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}
   supabaseClient.auth.onAuthStateChange(async(event,session)=>{
-    if(event==='PASSWORD_RECOVERY'){setAuthMode('recovery');document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';openPasswordResetModal();return;}
+    const urlParams=new URLSearchParams(window.location.search);
+    const hashParams=new URLSearchParams(window.location.hash.replace(/^#/,''));
+    const isPasswordRecovery=urlParams.get('type')==='recovery'||hashParams.get('type')==='recovery';
+    if(event==='PASSWORD_RECOVERY'||isPasswordRecovery){setAuthMode('recovery');document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';openPasswordResetModal();return;}
     if(event==='TOKEN_REFRESH_FAILED'){await supabaseClient.auth.refreshSession().catch(()=>{});return;}
     if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'){if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}return;}
     if(event==='SIGNED_OUT'){
@@ -2318,6 +2320,20 @@ async function init(){
     }
     if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}
   });
+  const urlParams=new URLSearchParams(window.location.search);
+  const hashParams=new URLSearchParams(window.location.hash.replace(/^#/,''));
+  const isPasswordRecovery=urlParams.get('type')==='recovery'||hashParams.get('type')==='recovery';
+  if(isPasswordRecovery&&session?.user){
+    document.getElementById('auth-screen').style.display='flex';
+    document.getElementById('app').style.display='none';
+    setAuthMode('recovery');
+    openPasswordResetModal();
+  }else if(session?.user){
+    await showAuthenticatedApp(session.user);
+  }else{
+    document.getElementById('auth-screen').style.display='flex';
+    document.getElementById('app').style.display='none';
+  }
 }
 document.getElementById('auth-form').addEventListener('submit',async e=>{
   e.preventDefault();const email=document.getElementById('auth-email').value.trim();const password=document.getElementById('auth-password').value;const submit=document.getElementById('auth-submit');submit.disabled=true;authMessage('Please wait…');
@@ -2360,8 +2376,10 @@ document.getElementById('reset-password-form').addEventListener('submit',async e
   submit.disabled=false;
   if(error){message.style.color='var(--danger)';message.textContent=error.message||'Could not update password.';return;}
   document.getElementById('reset-password-overlay').classList.remove('open');
+  window.history.replaceState({},document.title,window.location.pathname+window.location.search.replace(/[?&]type=recovery(?=&|$)/,''));
   setAuthMode('login');
   authMessage('Password updated successfully. Please sign in.');
+  await supabaseClient.auth.signOut();
 });
 const authPage = document.getElementById('auth-screen');
 const publicPage = document.getElementById('public-page');
