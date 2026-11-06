@@ -1672,26 +1672,31 @@ function showPublicContact() {
           <input type="hidden" name="_subject" value="New Toolify contact message">
           <input type="hidden" name="_template" value="table">
           <input type="hidden" name="_captcha" value="false">
+          <div class="contact-card-header">
+            <span>Send a message</span>
+            <p>Share the details and I'll respond as soon as possible.</p>
+          </div>
           <div class="contact-grid">
-            <div>
+            <div class="contact-field">
               <label for="contact-name">Name</label>
               <input id="contact-name" name="name" type="text" autocomplete="name" required placeholder="Your name">
             </div>
-            <div>
+            <div class="contact-field">
               <label for="contact-email">Email address</label>
               <input id="contact-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
             </div>
           </div>
-          <div style="margin-top:16px">
+          <div class="contact-field">
             <label for="contact-subject">Subject</label>
             <input id="contact-subject" name="subject" type="text" required placeholder="How can I help?">
           </div>
-          <div style="margin-top:16px">
+          <div class="contact-field">
             <label for="contact-message">Message</label>
             <textarea id="contact-message" name="message" required placeholder="Tell me about your request..."></textarea>
           </div>
-          <div style="margin-top:18px">
-            <button type="submit">Send message</button>
+          <div class="contact-submit-row">
+            <span>Usually replies within 24 hours</span>
+            <button type="submit">Send message <span aria-hidden="true">→</span></button>
           </div>
         </form>
         <aside class="contact-info-card">
