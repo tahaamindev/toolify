@@ -157,7 +157,8 @@ const State = {
     lastBackupAt: null,
     landing: "auto",
 clickSound: "click",
-quickTools: undefined
+quickTools: undefined,
+notes: []
   },
   ui: {
     activeNav: "all",   // 'all' | 'favorites' | categoryId
@@ -183,6 +184,26 @@ function quickToolsList(){
   if(!Array.isArray(State.settings.quickTools)) State.settings.quickTools = DEFAULT_QUICK_TOOLS.map(t=>({...t}));
   return State.settings.quickTools;
 }
+
+function notesList(){
+  if(!Array.isArray(State.settings.notes)) State.settings.notes = [];
+  return State.settings.notes;
+}
+
+function renderQuickNotes(){
+  const list = document.getElementById('quick-notes-list');
+  if(!list) return;
+  list.innerHTML = notesList().length
+    ? notesList().slice().reverse().map(note=>`<div class="quick-note-item">${escapeHTML(note.text)}<button class="quick-note-delete" type="button" data-delete-note="${escapeHTML(note.id)}" aria-label="Delete note">&times;</button></div>`).join('')
+    : '<div class="quick-note-empty">No saved notes yet.</div>';
+  list.querySelectorAll('[data-delete-note]').forEach(button=>{
+    button.addEventListener('click', async ()=>{
+      State.settings.notes = notesList().filter(note=>note.id !== button.dataset.deleteNote);
+      await persistSettings();
+      renderQuickNotes();
+    });
+  });
+}
 function faviconURL(url){
   try{
     const hostname = new URL(normalizeURL(url) || url).hostname;
@@ -195,7 +216,7 @@ function renderQuickTools(){
   const nav = document.getElementById('quick-tools-nav');
   if(!nav) return;
   nav.innerHTML = quickToolsList().map(tool=>`
-    <a class="quick-tool" href="${escapeHTML(tool.url)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHTML(tool.name)}" title="${escapeHTML(tool.name)}">
+    <a class="quick-tool" data-sidebar-id="${escapeHTML(tool.id)}" href="${escapeHTML(tool.url)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHTML(tool.name)}" title="${escapeHTML(tool.name)}">
       <img src="${escapeHTML(faviconURL(tool.url))}" alt="" referrerpolicy="no-referrer">
       <span class="quick-tool-name">${escapeHTML(tool.name)}</span>
     </a>
@@ -231,6 +252,12 @@ function renderQuickTools(){
     item.addEventListener('pointerleave', hideTooltip);
     item.addEventListener('focus', showTooltip);
     item.addEventListener('blur', hideTooltip);
+    item.addEventListener('contextmenu', (event)=>{
+      event.preventDefault();
+      hideTooltip();
+      const tool = quickToolsList().find(shortcut=>shortcut.id === item.dataset.sidebarId);
+      if(tool) showToolContextMenu(event.clientX, event.clientY, tool, 'sidebar');
+    });
   });
 }
 async function persistTool(tool){
@@ -344,7 +371,7 @@ function renderSidebar(){
     btn.addEventListener('click', ()=>{
       State.ui.activeNav = btn.dataset.nav;
       State.ui.search = "";
-      document.getElementById('search-input').value = "";
+      document.getElementById('mac-search-input').value = "";
       closeMobileSidebar();
       render();
     });
@@ -493,7 +520,60 @@ function renderGrid(){
     const tool = State.tools.find(t=>t.id===id);
     card.addEventListener('click', ()=> openTool(tool));
     card.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTool(tool); } });
+    card.addEventListener('contextmenu', (event)=>{
+      event.preventDefault();
+      showToolContextMenu(event.clientX, event.clientY, tool, 'library');
+    });
   });
+}
+
+let contextMenuTarget = null;
+let contextMenuType = null;
+
+function showToolContextMenu(x, y, tool, type='library'){
+  const menu = document.getElementById('tool-context-menu');
+  if(!menu || !tool) return;
+  contextMenuTarget = tool;
+  contextMenuType = type;
+  const label = menu.querySelector('[data-context-action="favorite"]');
+  const sidebarAction = menu.querySelector('[data-context-action="sidebar"]');
+  const removeAction = menu.querySelector('[data-context-action="delete"]');
+  label.textContent = tool.favorite ? 'Remove from Favorites' : 'Add to Favorites';
+  if(type === 'sidebar'){
+    sidebarAction.textContent = 'Remove from Sidebar';
+    sidebarAction.dataset.contextAction = 'remove-sidebar';
+    removeAction.textContent = 'Remove';
+  }else{
+    sidebarAction.textContent = quickToolsList().some(item=>item.url === tool.url) ? 'Added to Sidebar' : 'Add to Sidebar';
+    sidebarAction.dataset.contextAction = 'sidebar';
+    removeAction.textContent = 'Remove';
+  }
+  menu.style.left = `${Math.min(x, window.innerWidth - 210)}px`;
+  menu.style.top = `${Math.min(y, window.innerHeight - 210)}px`;
+  menu.classList.add('open');
+  menu.setAttribute('aria-hidden', 'false');
+}
+
+function hideToolContextMenu(){
+  const menu = document.getElementById('tool-context-menu');
+  menu?.classList.remove('open');
+  menu?.setAttribute('aria-hidden', 'true');
+  contextMenuTarget = null;
+  contextMenuType = null;
+}
+
+async function addLibraryToolToSidebar(tool){
+  if(!tool) return;
+  if(quickToolsList().some(item=>item.url === tool.url)){
+    toast('This tool is already on the sidebar.');
+    return;
+  }
+  State.settings.quickTools = quickToolsList();
+  State.settings.quickTools.push({id:uid(), name:tool.name, url:normalizeURL(tool.url)});
+  await persistSettings();
+  renderQuickTools();
+  renderQuickNotes();
+  toast('Added to Sidebar.');
 }
 
 function openTool(tool){
@@ -1381,7 +1461,21 @@ function closeMobileSidebar(){
   document.getElementById('sidebar').classList.remove('mobile-open');
 }
 
+function updateMacClock(){
+  const clock = document.getElementById('mac-clock');
+  if(!clock) return;
+  const now = new Date();
+  clock.textContent = now.toLocaleString([], {
+    weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'
+  });
+  clock.dateTime = now.toISOString();
+}
+
 function wireEvents(){
+  updateMacClock();
+  if(!wireEvents.clockTimer){
+    wireEvents.clockTimer = window.setInterval(updateMacClock, 30000);
+  }
   // Add tool
   document.getElementById('btn-add-tool-sidebar').addEventListener('click', ()=>openToolModal());
   document.getElementById('tool-modal-close').addEventListener('click', closeToolModal);
@@ -1417,23 +1511,73 @@ function wireEvents(){
   });
 
   // Settings
-  document.getElementById('btn-open-settings').addEventListener('click', ()=>openSettings('general'));
+  document.getElementById('btn-open-settings')?.addEventListener('click', ()=>openSettings('general'));
+  document.getElementById('mac-settings').addEventListener('click', ()=>openSettings('general'));
+  document.getElementById('mac-about').addEventListener('click', showPublicAbout);
+  document.getElementById('mac-contact').addEventListener('click', showPublicContact);
   document.getElementById('quick-tools-add').addEventListener('click', ()=>openSettings('sidebar'));
   document.getElementById('settings-close').addEventListener('click', ()=>document.getElementById('settings-overlay').classList.remove('open'));
   document.getElementById('settings-overlay').addEventListener('click', (e)=>{ if(e.target.id==='settings-overlay') document.getElementById('settings-overlay').classList.remove('open'); });
   document.querySelectorAll('.settings-nav-item').forEach(b=>b.addEventListener('click', ()=>renderSettingsPanel(b.dataset.panel)));
 
+  document.getElementById('tool-context-menu').addEventListener('click', async (event)=>{
+    const action = event.target.closest('[data-context-action]')?.dataset.contextAction;
+    if(!action || !contextMenuTarget) return;
+    const tool = contextMenuTarget;
+    const menuType = contextMenuType;
+    hideToolContextMenu();
+    if(action === 'open') openTool(tool);
+    if(action === 'edit') openToolModal(tool.id);
+    if(action === 'favorite'){ tool.favorite = !tool.favorite; await persistTool(tool); render(); toast(tool.favorite ? 'Added to Favorites.' : 'Removed from Favorites.'); }
+    if(action === 'sidebar') await addLibraryToolToSidebar(tool);
+    if(action === 'remove-sidebar'){
+      State.settings.quickTools = quickToolsList().filter(item=>item.id !== tool.id);
+      await persistSettings();
+      renderQuickTools();
+      toast('Removed from Sidebar.');
+    }
+    if(action === 'delete'){
+      if(menuType === 'sidebar'){
+        State.settings.quickTools = quickToolsList().filter(item=>item.id !== tool.id);
+        await persistSettings();
+        renderQuickTools();
+        toast('Removed from Sidebar.');
+      }else{
+        confirmDeleteTool(tool.id);
+      }
+    }
+  });
+  document.addEventListener('click', (event)=>{
+    if(!event.target.closest('#tool-context-menu')) hideToolContextMenu();
+  });
+  document.addEventListener('contextmenu', (event)=>{
+    if(!event.target.closest('.tool-card, .quick-tool')) hideToolContextMenu();
+  });
+
   // Search
-  const searchInput = document.getElementById('search-input');
+  const searchInput = document.getElementById('mac-search-input');
+  const legacySearchClear = document.getElementById('search-clear');
   const doSearch = debounce((val)=>{
     State.ui.search = val;
-    document.getElementById('search-clear').classList.toggle('show', !!val);
+    legacySearchClear?.classList.toggle('show', !!val);
     renderGrid();
   }, 120);
   searchInput.addEventListener('input', (e)=>doSearch(e.target.value));
-  document.getElementById('search-clear').addEventListener('click', ()=>{
-    searchInput.value=''; State.ui.search=''; document.getElementById('search-clear').classList.remove('show'); renderGrid(); searchInput.focus();
+  legacySearchClear?.addEventListener('click', ()=>{
+    searchInput.value=''; State.ui.search=''; legacySearchClear.classList.remove('show'); renderGrid(); searchInput.focus();
   });
+  document.getElementById('mac-signout')?.addEventListener('click', ()=>signOut());
+
+  document.getElementById('quick-note-add')?.addEventListener('click', async ()=>{
+    const input = document.getElementById('quick-note-input');
+    const text = input.value.trim();
+    if(!text) return;
+    notesList().push({id:uid(), text, createdAt:Date.now()});
+    input.value='';
+    await persistSettings();
+    renderQuickNotes();
+  });
+  renderQuickNotes();
 
   // Sort
   const sortBtn = document.getElementById('sort-btn');
@@ -1522,7 +1666,7 @@ function wireEvents(){
       });
       closeMobileSidebar();
       if(!closed){
-        const si = document.getElementById('search-input');
+        const si = document.getElementById('mac-search-input');
         if(si && si.value){ si.value = ''; State.ui.search = ''; document.getElementById('search-clear')?.classList.remove('show'); renderGrid(); }
         si?.blur();
       }
@@ -1536,7 +1680,7 @@ function wireEvents(){
     switch(e.key){
       case '/':
         e.preventDefault();
-        document.getElementById('search-input')?.focus();
+        document.getElementById('mac-search-input')?.focus();
         break;
       case 'n':
       case 'N':
@@ -1556,7 +1700,7 @@ function wireEvents(){
         e.preventDefault();
         State.ui.activeNav = 'favorites';
         State.ui.search = '';
-        const siF = document.getElementById('search-input'); if(siF) siF.value = '';
+        const siF = document.getElementById('mac-search-input'); if(siF) siF.value = '';
         document.getElementById('search-clear')?.classList.remove('show');
         closeMobileSidebar();
         render();
@@ -1566,7 +1710,7 @@ function wireEvents(){
         e.preventDefault();
         State.ui.activeNav = 'all';
         State.ui.search = '';
-        const siA = document.getElementById('search-input'); if(siA) siA.value = '';
+        const siA = document.getElementById('mac-search-input'); if(siA) siA.value = '';
         document.getElementById('search-clear')?.classList.remove('show');
         closeMobileSidebar();
         render();
@@ -1589,7 +1733,7 @@ let manualSignOut=false;
 let recoveryActive=false;
 function authMessage(message,isError=false){const el=document.getElementById('auth-message');el.textContent=message;el.classList.toggle('error',isError);}
 function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit'),toggle=document.getElementById('auth-toggle'),forgot=document.getElementById('auth-forgot');const isSignup=mode==='signup';document.getElementById('auth-confirm-wrap').style.display=isSignup?'block':'none';document.getElementById('auth-password-wrap').style.display='block';document.getElementById('auth-password').required=true;document.getElementById('auth-confirm').required=isSignup;title.textContent=isSignup?'Create your account':'Welcome back';sub.textContent=isSignup?'Create an account to keep your tools synced securely.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=isSignup?'Create account':'Sign in';toggle.textContent=isSignup?'Already have an account? Sign in':'New to Toolify? Sign up';forgot.style.display=isSignup?'none':'block';authMessage('');}
-async function showAuthenticatedApp(user){if(currentUser && currentUser.id === user.id) return;currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click'};libraryLoading=true;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('account-signout').title=user.email||'Signed in';render();try{await DB.open();await initAppData();try{await DB.syncForUser(user);const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);libraryLoading=false;applyTheme();render();}catch(e){console.error('Cloud sync failed:',e);libraryLoading=false;render();toast('Offline: showing saved library','error');}}catch(e){libraryLoading=false;render();console.error(e);authMessage('Could not open your library: '+(e.message||'Please try again.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
+async function showAuthenticatedApp(user){if(currentUser && currentUser.id === user.id) return;currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click',quickTools:undefined,notes:[]};libraryLoading=true;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('mac-signout').title=user.email||'Sign out';render();try{await DB.open();await initAppData();try{await DB.syncForUser(user);const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);libraryLoading=false;applyTheme();render();}catch(e){console.error('Cloud sync failed:',e);libraryLoading=false;render();toast('Offline: showing saved library','error');}}catch(e){libraryLoading=false;render();console.error(e);authMessage('Could not open your library: '+(e.message||'Please try again.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
 async function initAppData(){try{const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);}catch(e){toast('Could not load saved data','error');}ensureUncategorized();const ids=new Set(State.categories.map(c=>c.id));let fixed=false;State.tools.forEach(t=>{if(!ids.has(t.categoryId)){t.categoryId=UNCATEGORIZED_ID;fixed=true;}});if(fixed)await DB.bulkPut('tools',State.tools);if(!State.categories.length)ensureUncategorized();await DB.bulkPut('categories',State.categories);applyTheme();State.ui.activeNav=State.tools.some(t=>t.favorite)?'favorites':'all';wireEvents();render();}
 async function init(){
   if(!supabaseClient){
@@ -1818,7 +1962,8 @@ function showPublicAbout() {
 function closePublicPage() {
   publicPage.classList.remove('open');
   publicPage.setAttribute('aria-hidden', 'true');
-  authPage.setAttribute('aria-hidden', 'false');
+  const appVisible = document.getElementById('app').style.display !== 'none';
+  authPage.setAttribute('aria-hidden', appVisible ? 'true' : 'false');
 }
 
 function showPublicContact() {
@@ -1863,7 +2008,6 @@ document.querySelectorAll('.password-toggle').forEach(btn=>{
       : '<svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>';
   });
 });
-document.getElementById('account-signout').addEventListener('click',()=>signOut());
 
 // Service Worker registration (offline + auto-update)
 if('serviceWorker' in navigator){
