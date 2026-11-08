@@ -1454,6 +1454,7 @@ function wireEvents(){
    ============================================================ */
 let authMode='login';
 let manualSignOut=false;
+let recoveryActive=false;
 function authMessage(message,isError=false){const el=document.getElementById('auth-message');el.textContent=message;el.classList.toggle('error',isError);}
 function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit'),toggle=document.getElementById('auth-toggle'),forgot=document.getElementById('auth-forgot');const isSignup=mode==='signup';document.getElementById('auth-confirm-wrap').style.display=isSignup?'block':'none';document.getElementById('auth-password-wrap').style.display='block';document.getElementById('auth-password').required=true;document.getElementById('auth-confirm').required=isSignup;title.textContent=isSignup?'Create your account':'Welcome back';sub.textContent=isSignup?'Create an account to keep your tools synced securely.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=isSignup?'Create account':'Sign in';toggle.textContent=isSignup?'Already have an account? Sign in':'New to Toolify? Sign up';forgot.style.display=isSignup?'none':'block';authMessage('');}
 async function showAuthenticatedApp(user){if(currentUser && currentUser.id === user.id) return;currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click'};document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('account-signout').title=user.email||'Signed in';try{await DB.open();await initAppData();try{await DB.syncForUser(user);const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);applyTheme();render();}catch(e){console.error('Cloud sync failed:',e);toast('Offline: showing saved library','error');}}catch(e){console.error(e);authMessage('Could not open your library: '+(e.message||'Please try again.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
@@ -1475,9 +1476,19 @@ async function init(){
   const recoveryUrl = new URL(window.location.href);
   const recoveryType = recoveryUrl.searchParams.get('type') === 'recovery' ||
     recoveryUrl.hash.includes('type=recovery');
+  recoveryActive = recoveryType;
   const {data:{session}}=await supabaseClient.auth.getSession();
   supabaseClient.auth.onAuthStateChange(async(event,session)=>{
     if(event==='TOKEN_REFRESH_FAILED'){await supabaseClient.auth.refreshSession().catch(()=>{});return;}
+    if(event==='PASSWORD_RECOVERY'){
+      recoveryActive=true;
+      document.getElementById('app').style.display='none';
+      document.getElementById('auth-screen').style.display='flex';
+      document.getElementById('password-reset-overlay').classList.add('open');
+      document.getElementById('password-reset-new').focus();
+      return;
+    }
+    if(recoveryActive) return;
     if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'){if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}return;}
     if(event==='SIGNED_OUT'){
       manualSignOut=false;
@@ -1487,22 +1498,17 @@ async function init(){
       setAuthMode('login');
       return;
     }
-    if(event==='PASSWORD_RECOVERY'){
-      document.getElementById('app').style.display='none';
-      document.getElementById('auth-screen').style.display='flex';
-      document.getElementById('password-reset-overlay').classList.add('open');
-      document.getElementById('password-reset-new').focus();
-      return;
-    }
     if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}
   });
   if(session?.user){
-    await showAuthenticatedApp(session.user);
     if(recoveryType){
+      recoveryActive=true;
       document.getElementById('app').style.display='none';
       document.getElementById('auth-screen').style.display='flex';
       document.getElementById('password-reset-overlay').classList.add('open');
       document.getElementById('password-reset-new').focus();
+    }else{
+      await showAuthenticatedApp(session.user);
     }
   }else{
     document.getElementById('auth-screen').style.display='flex';
@@ -1570,6 +1576,7 @@ document.getElementById('password-reset-save').addEventListener('click',async()=
     if(updateError)throw updateError;
     closePasswordReset();
     await signOut();
+    recoveryActive=false;
     authMessage('Password updated successfully. Please sign in.');
   }catch(err){error.textContent=err.message||'Could not update password.';}
   finally{button.disabled=false;}
