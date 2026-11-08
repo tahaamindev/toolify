@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111312">
 <title>Toolify —  Tool Library</title>
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=10">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -124,6 +124,15 @@
       <div class="grid" id="tool-grid"></div>
     </div>
   </main>
+
+  <!-- ============ QUICK TOOLS ============ -->
+  <aside class="quick-tools" aria-label="Google and other important tools">
+    <button class="quick-tools-add" id="quick-tools-add" type="button" aria-label="Add sidebar tool" title="Add tool">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+    <nav class="quick-tools-nav" id="quick-tools-nav"></nav>
+  </aside>
+  <div class="quick-tool-tooltip" id="quick-tool-tooltip" role="tooltip"></div>
 </div>
 
 <!-- ============ PASSWORD RESET ============ -->
@@ -258,6 +267,7 @@
         <button class="settings-nav-item" data-panel="general">General</button>
         <button class="settings-nav-item" data-panel="account">Accounts</button>
         <button class="settings-nav-item" data-panel="tools">Tools</button>
+        <button class="settings-nav-item" data-panel="sidebar">Sidebar</button>
         <button class="settings-nav-item" data-panel="categories">Categories</button>
         <button class="settings-nav-item" data-panel="backup">Backup &amp; Restore</button>
         <button class="settings-nav-item" data-panel="appearance">Appearance</button>
@@ -272,6 +282,6 @@
 <input type="file" id="import-file-input" accept="application/json" style="display:none;">
 <div id="toast-stack" aria-live="polite"></div>
 
-<script src="app.js?v=7"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

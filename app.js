@@ -156,7 +156,8 @@ const State = {
     sort: "recent",
     lastBackupAt: null,
     landing: "auto",
-clickSound: "click"
+clickSound: "click",
+quickTools: undefined
   },
   ui: {
     activeNav: "all",   // 'all' | 'favorites' | categoryId
@@ -167,6 +168,70 @@ clickSound: "click"
 
 async function persistSettings(){
   await DB.put("settings", {key:"app", value: State.settings});
+}
+const DEFAULT_QUICK_TOOLS = [
+  {id:'gemini', name:'Gemini', url:'https://gemini.google.com/'},
+  {id:'ai-studio', name:'Google AI Studio', url:'https://aistudio.google.com/'},
+  {id:'notebooklm', name:'NotebookLM', url:'https://notebooklm.google.com/'},
+  {id:'drive', name:'Google Drive', url:'https://drive.google.com/'},
+  {id:'gmail', name:'Gmail', url:'https://mail.google.com/'},
+  {id:'docs', name:'Google Docs', url:'https://docs.google.com/'},
+  {id:'calendar', name:'Google Calendar', url:'https://calendar.google.com/'},
+  {id:'translate', name:'Google Translate', url:'https://translate.google.com/'}
+];
+function quickToolsList(){
+  if(!Array.isArray(State.settings.quickTools)) State.settings.quickTools = DEFAULT_QUICK_TOOLS.map(t=>({...t}));
+  return State.settings.quickTools;
+}
+function faviconURL(url){
+  try{
+    const hostname = new URL(normalizeURL(url) || url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=64`;
+  }catch(e){
+    return '';
+  }
+}
+function renderQuickTools(){
+  const nav = document.getElementById('quick-tools-nav');
+  if(!nav) return;
+  nav.innerHTML = quickToolsList().map(tool=>`
+    <a class="quick-tool" href="${escapeHTML(tool.url)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHTML(tool.name)}" title="${escapeHTML(tool.name)}">
+      <img src="${escapeHTML(faviconURL(tool.url))}" alt="" referrerpolicy="no-referrer">
+      <span class="quick-tool-name">${escapeHTML(tool.name)}</span>
+    </a>
+  `).join('');
+
+  const tooltip = document.getElementById('quick-tool-tooltip');
+  nav.onpointermove = (event)=>{
+    [...nav.querySelectorAll('.quick-tool')].forEach(item=>{
+      const rect = item.getBoundingClientRect();
+      const distance = Math.abs(event.clientY - (rect.top + rect.height / 2));
+      const influence = Math.max(0, 1 - distance / 64);
+      item.style.setProperty('--dock-scale', (1 + influence * 0.26).toFixed(2));
+    });
+  };
+  nav.onpointerleave = ()=>{
+    nav.querySelectorAll('.quick-tool').forEach(item=>item.style.setProperty('--dock-scale', '1'));
+    tooltip?.classList.remove('open');
+  };
+
+  nav.querySelectorAll('.quick-tool').forEach(item=>{
+    const showTooltip = ()=>{
+      if(!tooltip) return;
+      tooltip.textContent = item.getAttribute('aria-label') || '';
+      const dockRect = document.querySelector('.quick-tools').getBoundingClientRect();
+      const itemRect = item.getBoundingClientRect();
+      tooltip.style.left = `${Math.max(8, dockRect.left - 10)}px`;
+      tooltip.style.top = `${itemRect.top + itemRect.height / 2}px`;
+      tooltip.style.transform = 'translate(-100%, -50%) scale(1)';
+      tooltip.classList.add('open');
+    };
+    const hideTooltip = ()=>tooltip?.classList.remove('open');
+    item.addEventListener('pointerenter', showTooltip);
+    item.addEventListener('pointerleave', hideTooltip);
+    item.addEventListener('focus', showTooltip);
+    item.addEventListener('blur', hideTooltip);
+  });
 }
 async function persistTool(tool){
   await DB.put("tools", tool);
@@ -446,6 +511,7 @@ function openTool(tool){
    ============================================================ */
 function render(){
   renderSidebar();
+  renderQuickTools();
   renderGrid();
   document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===State.settings.view));
   document.getElementById('sort-label').textContent = {newest:'Newest',oldest:'Oldest',az:'A – Z',za:'Z – A',recent:'Recently opened'}[State.settings.sort];
@@ -990,6 +1056,58 @@ function renderSettingsPanel(panelName){
     document.getElementById('manage-search-input').addEventListener('input', (e)=>renderManageToolsList(e.target.value));
   }
 
+  else if(panelName === 'sidebar'){
+    const tools = quickToolsList();
+    panel.innerHTML = `
+      <h3>Sidebar</h3>
+      <div class="panel-sub">Add, reorder-free, or remove shortcuts shown in the right-side toolbar. Changes sync with your Toolify account.</div>
+      <div class="sidebar-tool-list">
+        ${tools.map(tool=>`
+          <div class="sidebar-tool-row" data-sidebar-tool="${escapeHTML(tool.id)}">
+            <img src="${escapeHTML(faviconURL(tool.url))}" alt="">
+            <div class="sidebar-tool-info">
+              <div class="sidebar-tool-name">${escapeHTML(tool.name)}</div>
+              <div class="sidebar-tool-url">${escapeHTML(tool.url)}</div>
+            </div>
+            <button class="icon-btn danger" data-remove-sidebar-tool="${escapeHTML(tool.id)}" aria-label="Remove ${escapeHTML(tool.name)}">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        `).join('')}
+      </div>
+      <div class="sidebar-tool-form">
+        <div class="sidebar-tool-form-title">Add shortcut</div>
+        <div class="sidebar-tool-fields">
+          <input class="field-input" id="sidebar-tool-name" maxlength="40" placeholder="Tool name">
+          <input class="field-input" id="sidebar-tool-url" maxlength="500" placeholder="example.com">
+        </div>
+        <button class="btn btn-solid" id="sidebar-tool-add">Add Shortcut</button>
+      </div>
+    `;
+    panel.querySelectorAll('[data-remove-sidebar-tool]').forEach(button=>{
+      button.addEventListener('click', async ()=>{
+        State.settings.quickTools = quickToolsList().filter(tool=>tool.id !== button.dataset.removeSidebarTool);
+        await persistSettings();
+        renderQuickTools();
+        renderSettingsPanel('sidebar');
+      });
+    });
+    document.getElementById('sidebar-tool-add').addEventListener('click', async ()=>{
+      const nameInput = document.getElementById('sidebar-tool-name');
+      const urlInput = document.getElementById('sidebar-tool-url');
+      const name = nameInput.value.trim();
+      const url = normalizeURL(urlInput.value);
+      if(!name){ toast('Enter a shortcut name.', 'error'); nameInput.focus(); return; }
+      if(!url){ toast('Enter a valid web address.', 'error'); urlInput.focus(); return; }
+      State.settings.quickTools = quickToolsList();
+      State.settings.quickTools.push({id:uid(), name, url});
+      await persistSettings();
+      renderQuickTools();
+      renderSettingsPanel('sidebar');
+      toast('Sidebar shortcut added.');
+    });
+  }
+
   else if(panelName === 'categories'){
     const userCats = State.categories.filter(c=>c.id!==UNCATEGORIZED_ID).sort((a,b)=>a.name.localeCompare(b.name));
     const uncat = State.categories.find(c=>c.id===UNCATEGORIZED_ID);
@@ -1300,6 +1418,7 @@ function wireEvents(){
 
   // Settings
   document.getElementById('btn-open-settings').addEventListener('click', ()=>openSettings('general'));
+  document.getElementById('quick-tools-add').addEventListener('click', ()=>openSettings('sidebar'));
   document.getElementById('settings-close').addEventListener('click', ()=>document.getElementById('settings-overlay').classList.remove('open'));
   document.getElementById('settings-overlay').addEventListener('click', (e)=>{ if(e.target.id==='settings-overlay') document.getElementById('settings-overlay').classList.remove('open'); });
   document.querySelectorAll('.settings-nav-item').forEach(b=>b.addEventListener('click', ()=>renderSettingsPanel(b.dataset.panel)));
