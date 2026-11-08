@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111312">
 <title>Toolify —  Tool Library</title>
-<link rel="stylesheet" href="styles.css?v=12">
+<link rel="stylesheet" href="styles.css?v=13">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -107,6 +107,10 @@
       <div class="topbar-title-wrap">
         <div class="topbar-title" id="view-title">All Tools</div>
         <div class="topbar-sub" id="view-sub">0 tools</div>
+      </div>
+      <div class="launch-announcement" id="launch-announcement" role="status" aria-live="polite" hidden>
+        <span>Toolify by Tersynex is launching its own Daily Use Tools soon!</span>
+        <button type="button" aria-label="Dismiss announcement">&times;</button>
       </div>
       <div class="topbar-controls">
         <div class="sort-wrap">
@@ -313,6 +317,6 @@
 <input type="file" id="import-file-input" accept="application/json" style="display:none;">
 <div id="toast-stack" aria-live="polite"></div>
 
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>

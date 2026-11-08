@@ -58,8 +58,14 @@ const DB = (function(){
     currentUser=user;cloudSyncBusy=true;
     try{
       const names=['categories','tools','settings','snapshots'];
-      const local={};for(const n of names)local[n]=await localGetAll(n);
-      const remote={};for(const n of names){const {data,error}=await supabaseClient.from(tableFor[n]).select('*').eq('user_id',user.id);if(error)throw error;remote[n]=(data||[]).map(v=>fromCloud(n,v));}
+      const localEntries=await Promise.all(names.map(async n=>[n,await localGetAll(n)]));
+      const local=Object.fromEntries(localEntries);
+      const remoteEntries=await Promise.all(names.map(async n=>{
+        const {data,error}=await supabaseClient.from(tableFor[n]).select('*').eq('user_id',user.id);
+        if(error)throw error;
+        return [n,(data||[]).map(v=>fromCloud(n,v))];
+      }));
+      const remote=Object.fromEntries(remoteEntries);
       const hasRemote=names.some(n=>remote[n].length>0);
       if(!hasRemote){
         if(!local.categories.some(c=>c.id==='uncategorized'))local.categories.push({id:'uncategorized',name:'Uncategorized',system:true,createdAt:new Date().toISOString()});
@@ -69,7 +75,10 @@ const DB = (function(){
         if(local.snapshots.length)await cloudUpsert('snapshots',local.snapshots);
         for(const n of names){const {data,error}=await supabaseClient.from(tableFor[n]).select('*').eq('user_id',user.id);if(error)throw error;remote[n]=(data||[]).map(v=>fromCloud(n,v));}
       }
-      for(const n of names){await localClear(n);if(remote[n].length)await localBulkPut(n,remote[n]);}
+      await Promise.all(names.map(async n=>{
+        await localClear(n);
+        if(remote[n].length)await localBulkPut(n,remote[n]);
+      }));
     }finally{cloudSyncBusy=false;}
   }
   async function clearLocal(){for(const n of ['tools','categories','settings','snapshots'])await localClear(n);}
@@ -319,7 +328,26 @@ function toast(msg, type, duration=2600){
 }
 
 function showLaunchAnnouncement(){
-  toast('Toolify by Tersynex is launching its own Daily Use Tools soon!', null, 7000);
+  const announcement = document.getElementById('launch-announcement');
+  if(!announcement) return;
+  clearTimeout(showLaunchAnnouncement.timer);
+  clearTimeout(showLaunchAnnouncement.exitTimer);
+  announcement.hidden = false;
+  announcement.classList.remove('leaving');
+  const dismiss = ()=>closeLaunchAnnouncement();
+  announcement.querySelector('button').onclick = dismiss;
+  showLaunchAnnouncement.timer = setTimeout(dismiss, 15000);
+}
+
+function closeLaunchAnnouncement(){
+  const announcement = document.getElementById('launch-announcement');
+  if(!announcement || announcement.hidden) return;
+  clearTimeout(showLaunchAnnouncement.timer);
+  announcement.classList.add('leaving');
+  showLaunchAnnouncement.exitTimer = setTimeout(()=>{
+    announcement.hidden = true;
+    announcement.classList.remove('leaving');
+  }, 180);
 }
 
 /* ============================================================
