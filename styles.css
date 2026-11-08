@@ -263,8 +263,8 @@ a{color:inherit;}
 .topbar-sub{font-size:11px; color:var(--text-tertiary); margin-top:-1px;}
 .launch-announcement{
   min-width:0;
-  width:clamp(220px,24vw,360px);
-  flex:0 1 clamp(220px,24vw,360px);
+  width:clamp(300px,30vw,420px);
+  flex:0 1 clamp(300px,30vw,420px);
   min-height:34px;
   margin:0 auto;
   display:flex;
@@ -283,7 +283,7 @@ a{color:inherit;}
   animation:announcement-in 180ms var(--ease);
 }
 .launch-announcement[hidden]{display:none;}
-.launch-announcement span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.launch-announcement span{min-width:0; white-space:normal;}
 .launch-announcement button{
   width:22px;
   height:22px;
@@ -300,7 +300,7 @@ a{color:inherit;}
 @keyframes announcement-in{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
 
 @media (min-width:861px) and (max-width:1100px){
-  .launch-announcement{width:clamp(200px,18vw,240px); flex-basis:clamp(200px,18vw,240px); font-size:11px;}
+  .launch-announcement{width:300px; flex-basis:300px; font-size:11px;}
   .topbar{gap:10px; padding-inline:18px;}
 }
 
