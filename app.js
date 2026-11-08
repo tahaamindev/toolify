@@ -1474,21 +1474,28 @@ async function init(){
     return;
   }
   const recoveryUrl = new URL(window.location.href);
+  const hashParams = new URLSearchParams(recoveryUrl.hash.replace(/^#/, ''));
   const recoveryType = recoveryUrl.searchParams.get('type') === 'recovery' ||
-    recoveryUrl.hash.includes('type=recovery');
+    hashParams.get('type') === 'recovery';
+  const authCallbackPending = recoveryUrl.searchParams.has('code') ||
+    recoveryUrl.searchParams.has('error_code') ||
+    hashParams.has('access_token') ||
+    hashParams.has('code') ||
+    hashParams.has('error_code');
+  let authUrlProcessing = authCallbackPending;
   recoveryActive = recoveryType;
-  const {data:{session}}=await supabaseClient.auth.getSession();
   supabaseClient.auth.onAuthStateChange(async(event,session)=>{
     if(event==='TOKEN_REFRESH_FAILED'){await supabaseClient.auth.refreshSession().catch(()=>{});return;}
     if(event==='PASSWORD_RECOVERY'){
       recoveryActive=true;
+      authUrlProcessing=false;
       document.getElementById('app').style.display='none';
       document.getElementById('auth-screen').style.display='flex';
       document.getElementById('password-reset-overlay').classList.add('open');
       document.getElementById('password-reset-new').focus();
       return;
     }
-    if(recoveryActive) return;
+    if(recoveryActive || authUrlProcessing) return;
     if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'){if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}return;}
     if(event==='SIGNED_OUT'){
       manualSignOut=false;
@@ -1500,6 +1507,17 @@ async function init(){
     }
     if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}
   });
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  if(authUrlProcessing){
+    window.setTimeout(()=>{
+      authUrlProcessing=false;
+      if(!recoveryActive){
+        supabaseClient.auth.getSession().then(({data:{session:currentSession}})=>{
+          if(currentSession?.user&&!currentUser) showAuthenticatedApp(currentSession.user);
+        }).catch(()=>{});
+      }
+    },1500);
+  }
   if(session?.user){
     if(recoveryType){
       recoveryActive=true;
@@ -1510,7 +1528,7 @@ async function init(){
     }else{
       await showAuthenticatedApp(session.user);
     }
-  }else{
+  }else if(!authUrlProcessing){
     document.getElementById('auth-screen').style.display='flex';
     document.getElementById('app').style.display='none';
   }
@@ -1534,7 +1552,9 @@ document.getElementById('auth-forgot').addEventListener('click',async()=>{
   if(!email){authMessage('Enter your email address first.',true);document.getElementById('auth-email').focus();return;}
   const button=document.getElementById('auth-forgot');button.disabled=true;
   try{
-    const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+    const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{
+      redirectTo:window.location.origin+window.location.pathname+'?type=recovery'
+    });
     if(error)throw error;
     authMessage('Password reset link sent. Check your email.');
   }catch(err){authMessage(err.message||'Could not send the reset link.',true);}
@@ -1543,7 +1563,7 @@ document.getElementById('auth-forgot').addEventListener('click',async()=>{
 
 async function signOut(){
   manualSignOut=true;
-  const {error}=await supabaseClient.auth.signOut({scope:'local'});
+  const {error}=await supabaseClient.auth.signOut({scope:'global'});
   currentUser=null;
   await DB.clearLocal();
   document.getElementById('app').style.display='none';
@@ -1561,6 +1581,11 @@ function closePasswordReset(){
   document.getElementById('password-reset-new').value='';
   document.getElementById('password-reset-confirm').value='';
   document.getElementById('password-reset-error').textContent='';
+  if(recoveryActive){
+    recoveryActive=false;
+    history.replaceState({},document.title,window.location.pathname);
+    supabaseClient.auth.signOut({scope:'global'}).catch(()=>{});
+  }
 }
 document.getElementById('password-reset-close').addEventListener('click',closePasswordReset);
 document.getElementById('password-reset-cancel').addEventListener('click',closePasswordReset);
