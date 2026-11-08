@@ -256,15 +256,15 @@ a{color:inherit;}
 @keyframes context-in{from{opacity:0; transform:scale(.96) translateY(-4px);}to{opacity:1; transform:scale(1) translateY(0);}}
 .topbar{
   display:flex; align-items:center; gap:16px; min-height:48px; padding:7px 28px; border-bottom:1px solid var(--border-subtle);
-  flex-shrink:0; flex-wrap:wrap;
+  flex-shrink:0; flex-wrap:nowrap; position:relative;
 }
 .topbar-title-wrap{min-width:105px; flex-shrink:0;}
 .topbar-title{font-size:16px; font-weight:650; letter-spacing:-0.015em;}
 .topbar-sub{font-size:11px; color:var(--text-tertiary); margin-top:-1px;}
 .launch-announcement{
   min-width:0;
-  flex:1 1 420px;
-  max-width:620px;
+  width:clamp(220px,24vw,360px);
+  flex:0 1 clamp(220px,24vw,360px);
   min-height:34px;
   margin:0 auto;
   display:flex;
@@ -279,10 +279,11 @@ a{color:inherit;}
   font-size:12px;
   line-height:1.25;
   text-align:center;
+  overflow:hidden;
   animation:announcement-in 180ms var(--ease);
 }
 .launch-announcement[hidden]{display:none;}
-.launch-announcement span{min-width:0;}
+.launch-announcement span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .launch-announcement button{
   width:22px;
   height:22px;
@@ -297,6 +298,11 @@ a{color:inherit;}
 .launch-announcement button:hover{background:var(--bg-elev-3);color:var(--text-primary);}
 .launch-announcement.leaving{opacity:0;transform:translateY(-3px);transition:opacity 180ms ease,transform 180ms ease;}
 @keyframes announcement-in{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+
+@media (min-width:861px) and (max-width:1100px){
+  .launch-announcement{width:clamp(200px,18vw,240px); flex-basis:clamp(200px,18vw,240px); font-size:11px;}
+  .topbar{gap:10px; padding-inline:18px;}
+}
 
 .search-wrap{
   flex:1; min-width:180px; max-width:420px; position:relative; display:flex; align-items:center;
@@ -655,7 +661,7 @@ a{color:inherit;}
   #sidebar.collapsed{width:230px;}
   .mobile-menu-btn{display:flex !important;}
   .topbar{padding:14px 16px; transition:padding var(--dur-fast) var(--ease);}
-  .launch-announcement{order:3; flex-basis:100%; max-width:none; margin-top:2px;}
+  .launch-announcement{display:none;}
   .content-scroll{padding:16px;}
   .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;}
   #settings-overlay .modal{height:92vh; max-height:none; width:96vw;}
