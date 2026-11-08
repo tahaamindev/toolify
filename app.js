@@ -18,15 +18,20 @@ const MAX_SNAPSHOTS = 5;
    ============================================================ */
 const SUPABASE_URL = "https://ihlqghvdfunsfdnlaoks.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_roUVfR56-WA4eDay7bN_kg_g3mb2PwX";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storage: window.localStorage,
-    storageKey: 'toolify-auth'
-  }
-});
+let supabaseClient = null;
+try{
+  supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: window.localStorage,
+      storageKey: 'toolify-auth'
+    }
+  }) : null;
+}catch(error){
+  console.error('Supabase initialization failed:',error);
+}
 let currentUser = null;
 let cloudSyncBusy = false;
 const DB = (function(){
@@ -915,10 +920,7 @@ function renderSettingsPanel(panelName){
       }catch(err){toast(err.message || 'Could not update password.','error');}
       finally{btn.disabled=false;btn.textContent='Update password';}
     });
-    document.getElementById('account-panel-signout').addEventListener('click', async ()=>{
-      const {error} = await supabaseClient.auth.signOut();
-      if(error) toast(error.message || 'Could not sign out.','error');
-    });
+    document.getElementById('account-panel-signout').addEventListener('click', () => signOut());
   }
 
   if(panelName === 'general'){
@@ -1193,96 +1195,9 @@ function renderSettingsPanel(panelName){
           </div>
         </div>
 
-        <div class="about-section">
-          <h5>Report a Bug</h5>
-          <p>Your feedback plays an important role in making Toolify better. If you encounter a bug, unexpected behavior, or any technical issue, use <strong>Settings → Report a Bug</strong> to send a report directly to the developer.</p>
-          <p style="font-size:11.5px; color:var(--text-tertiary);">Bug Report Email: tahaamin.dev@gmail.com</p>
-        </div>
-
         <div class="about-meta">Version ${APP_VERSION} · Web Application · Backend: Supabase · Hosting: GitHub Pages</div>
       </div>
     `;
-  }
-
-  else if(panelName === 'reportbug'){
-    panel.innerHTML = `
-      <h3>Report a Bug</h3>
-      <div class="panel-sub">Found an issue or unexpected behavior? Send a report directly to the developer. No email app will open.</div>
-      <div class="settings-block">
-        <form class="report-form" id="report-bug-form">
-          <div class="field">
-            <label class="field-label" for="report-name">Your name (optional)</label>
-            <input class="field-input" id="report-name" type="text" placeholder="Your name">
-          </div>
-          <div class="field">
-            <label class="field-label" for="report-email">Your email (optional)</label>
-            <input class="field-input" id="report-email" type="email" placeholder="you@example.com">
-          </div>
-          <div class="field">
-            <label class="field-label" for="report-subject">Subject</label>
-            <input class="field-input" id="report-subject" type="text" placeholder="Short summary of the issue" required>
-          </div>
-          <div class="field">
-            <label class="field-label" for="report-message">Describe the bug</label>
-            <textarea class="field-input" id="report-message" placeholder="What happened? What did you expect? Steps to reproduce..." required></textarea>
-          </div>
-          <button class="btn btn-solid" type="submit" id="report-submit">Send Report</button>
-          <div id="report-status" style="font-size:12px; color:var(--text-tertiary); margin-top:8px;"></div>
-        </form>
-      </div>
-      <div class="settings-block">
-        <div class="settings-row">
-          <div><div class="settings-row-label">Direct email</div><div class="settings-row-desc">You can also reach the developer at tahaamin.dev@gmail.com</div></div>
-        </div>
-      </div>
-    `;
-    const form = document.getElementById('report-bug-form');
-    form.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const btn = document.getElementById('report-submit');
-      const status = document.getElementById('report-status');
-      const subject = document.getElementById('report-subject').value.trim();
-      const message = document.getElementById('report-message').value.trim();
-      if(!subject || !message){ status.textContent = 'Please fill in subject and description.'; status.style.color='var(--danger)'; return; }
-      btn.disabled = true;
-      btn.textContent = 'Sending…';
-      status.textContent = '';
-      try {
-        const payload = {
-          name: document.getElementById('report-name').value.trim(),
-          email: document.getElementById('report-email').value.trim(),
-          _subject: 'Toolify Bug Report: ' + subject,
-          message: message,
-          _template: 'table'
-        };
-        const res = await fetch('https://formsubmit.co/ajax/tahaamin.dev@gmail.com', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if(!res.ok) throw new Error('Request failed');
-        const data = await res.json().catch(()=>({}));
-        if(data.success === 'false' || data.success === false) throw new Error(data.message || 'Send failed');
-        status.textContent = 'Report sent successfully. Thank you!';
-        status.style.color = 'var(--accent)';
-        form.reset();
-      } catch(err){
-        // Fallback: open the default email client (same tab, no new window) with the report pre-filled.
-        const mailSubject = 'Toolify Bug Report: ' + subject;
-        const mailBody = 'Name: ' + (document.getElementById('report-name').value.trim() || '-') +
-          '\nEmail: ' + (document.getElementById('report-email').value.trim() || '-') +
-          '\n\n' + message;
-        const mailto = 'mailto:tahaamin.dev@gmail.com?subject=' + encodeURIComponent(mailSubject) +
-          '&body=' + encodeURIComponent(mailBody);
-        status.textContent = 'Silent send failed. Opening your email app to send the report…';
-        status.style.color = 'var(--danger)';
-        // Small delay so the user sees the message, then hand off to the mail client.
-        setTimeout(()=>{ window.location.href = mailto; }, 400);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Send Report';
-      }
-    });
   }
 
 }
@@ -1540,23 +1455,55 @@ function wireEvents(){
 let authMode='login';
 let manualSignOut=false;
 function authMessage(message,isError=false){const el=document.getElementById('auth-message');el.textContent=message;el.classList.toggle('error',isError);}
-function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit');document.getElementById('auth-confirm-wrap').style.display=mode==='signup'?'block':'none';document.getElementById('auth-password-wrap').style.display='block';document.getElementById('auth-password').required=true;document.getElementById('auth-confirm').required=mode==='signup';title.textContent=mode==='signup'?'Create your account':'Welcome back';sub.textContent=mode==='signup'?'Create an account to keep your tools synced securely.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=mode==='signup'?'Create account':'Sign in';authMessage('');}
-async function showAuthenticatedApp(user){if(currentUser && currentUser.id === user.id) return;currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click'};document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('account-signout').title=user.email||'Signed in';try{await DB.open();await DB.syncForUser(user);await initAppData();}catch(e){console.error(e);authMessage('Cloud sync failed: '+(e.message||'Check your Supabase tables and RLS policies.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
+function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit'),toggle=document.getElementById('auth-toggle'),forgot=document.getElementById('auth-forgot');const isSignup=mode==='signup';document.getElementById('auth-confirm-wrap').style.display=isSignup?'block':'none';document.getElementById('auth-password-wrap').style.display='block';document.getElementById('auth-password').required=true;document.getElementById('auth-confirm').required=isSignup;title.textContent=isSignup?'Create your account':'Welcome back';sub.textContent=isSignup?'Create an account to keep your tools synced securely.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=isSignup?'Create account':'Sign in';toggle.textContent=isSignup?'Already have an account? Sign in':'New to Toolify? Sign up';forgot.style.display=isSignup?'none':'block';authMessage('');}
+async function showAuthenticatedApp(user){if(currentUser && currentUser.id === user.id) return;currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click'};document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('account-signout').title=user.email||'Signed in';try{await DB.open();await initAppData();try{await DB.syncForUser(user);const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);applyTheme();render();}catch(e){console.error('Cloud sync failed:',e);toast('Offline: showing saved library','error');}}catch(e){console.error(e);authMessage('Could not open your library: '+(e.message||'Please try again.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
 async function initAppData(){try{const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);}catch(e){toast('Could not load saved data','error');}ensureUncategorized();const ids=new Set(State.categories.map(c=>c.id));let fixed=false;State.tools.forEach(t=>{if(!ids.has(t.categoryId)){t.categoryId=UNCATEGORIZED_ID;fixed=true;}});if(fixed)await DB.bulkPut('tools',State.tools);if(!State.categories.length)ensureUncategorized();await DB.bulkPut('categories',State.categories);applyTheme();State.ui.activeNav=State.tools.some(t=>t.favorite)?'favorites':'all';wireEvents();render();}
 async function init(){
-  await DB.open();
+  if(!supabaseClient){
+    document.getElementById('auth-screen').style.display='flex';
+    authMessage('Could not load sign-in services. Check your connection and refresh.',true);
+    return;
+  }
+  try{
+    await DB.open();
+  }catch(error){
+    console.error('Could not open local database:',error);
+    document.getElementById('auth-screen').style.display='flex';
+    authMessage('Local storage is unavailable. Enable site storage and refresh.',true);
+    return;
+  }
+  const recoveryUrl = new URL(window.location.href);
+  const recoveryType = recoveryUrl.searchParams.get('type') === 'recovery' ||
+    recoveryUrl.hash.includes('type=recovery');
   const {data:{session}}=await supabaseClient.auth.getSession();
   supabaseClient.auth.onAuthStateChange(async(event,session)=>{
     if(event==='TOKEN_REFRESH_FAILED'){await supabaseClient.auth.refreshSession().catch(()=>{});return;}
     if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'){if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}return;}
     if(event==='SIGNED_OUT'){
-      if(manualSignOut){manualSignOut=false;if(currentUser){currentUser=null;await DB.clearLocal();document.getElementById('app').style.display='none';document.getElementById('auth-screen').style.display='flex';setAuthMode('login');}}
+      manualSignOut=false;
+      if(currentUser){currentUser=null;await DB.clearLocal();}
+      document.getElementById('app').style.display='none';
+      document.getElementById('auth-screen').style.display='flex';
+      setAuthMode('login');
+      return;
+    }
+    if(event==='PASSWORD_RECOVERY'){
+      document.getElementById('app').style.display='none';
+      document.getElementById('auth-screen').style.display='flex';
+      document.getElementById('password-reset-overlay').classList.add('open');
+      document.getElementById('password-reset-new').focus();
       return;
     }
     if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}
   });
   if(session?.user){
     await showAuthenticatedApp(session.user);
+    if(recoveryType){
+      document.getElementById('app').style.display='none';
+      document.getElementById('auth-screen').style.display='flex';
+      document.getElementById('password-reset-overlay').classList.add('open');
+      document.getElementById('password-reset-new').focus();
+    }
   }else{
     document.getElementById('auth-screen').style.display='flex';
     document.getElementById('app').style.display='none';
@@ -1576,6 +1523,57 @@ document.getElementById('auth-form').addEventListener('submit',async e=>{
   }catch(err){authMessage(err.message||'Authentication failed.',true);}finally{submit.disabled=false;}
 });
 document.getElementById('auth-toggle').addEventListener('click',()=>setAuthMode(authMode==='signup'?'login':'signup'));
+document.getElementById('auth-forgot').addEventListener('click',async()=>{
+  const email=document.getElementById('auth-email').value.trim();
+  if(!email){authMessage('Enter your email address first.',true);document.getElementById('auth-email').focus();return;}
+  const button=document.getElementById('auth-forgot');button.disabled=true;
+  try{
+    const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+    if(error)throw error;
+    authMessage('Password reset link sent. Check your email.');
+  }catch(err){authMessage(err.message||'Could not send the reset link.',true);}
+  finally{button.disabled=false;}
+});
+
+async function signOut(){
+  manualSignOut=true;
+  const {error}=await supabaseClient.auth.signOut({scope:'local'});
+  currentUser=null;
+  await DB.clearLocal();
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  setAuthMode('login');
+  if(error){
+    manualSignOut=false;
+    console.error('Sign out error:',error);
+    authMessage('Signed out locally. '+(error.message||''),true);
+  }
+}
+
+function closePasswordReset(){
+  document.getElementById('password-reset-overlay').classList.remove('open');
+  document.getElementById('password-reset-new').value='';
+  document.getElementById('password-reset-confirm').value='';
+  document.getElementById('password-reset-error').textContent='';
+}
+document.getElementById('password-reset-close').addEventListener('click',closePasswordReset);
+document.getElementById('password-reset-cancel').addEventListener('click',closePasswordReset);
+document.getElementById('password-reset-save').addEventListener('click',async()=>{
+  const password=document.getElementById('password-reset-new').value;
+  const confirm=document.getElementById('password-reset-confirm').value;
+  const error=document.getElementById('password-reset-error');
+  if(password.length<6){error.textContent='Password must be at least 6 characters.';return;}
+  if(password!==confirm){error.textContent='Passwords do not match.';return;}
+  const button=document.getElementById('password-reset-save');button.disabled=true;error.textContent='';
+  try{
+    const {error:updateError}=await supabaseClient.auth.updateUser({password});
+    if(updateError)throw updateError;
+    closePasswordReset();
+    await signOut();
+    authMessage('Password updated successfully. Please sign in.');
+  }catch(err){error.textContent=err.message||'Could not update password.';}
+  finally{button.disabled=false;}
+});
 const authPage = document.getElementById('auth-screen');
 const publicPage = document.getElementById('public-page');
 const publicPageContent = document.getElementById('public-page-content');
@@ -1664,50 +1662,15 @@ function showPublicContact() {
     <div class="contact-page">
       <div class="contact-heading">
         <span class="auth-kicker">Get in touch</span>
-        <h1>Let's build something useful.</h1>
-        <p>Have a question, feedback, partnership idea, or project in mind? Send a message and Taha will get back to you.</p>
+        <h1>Contact Taha Amin.</h1>
       </div>
-      <div class="contact-layout">
-        <form class="contact-card" action="https://formsubmit.co/tahaamin.dev@gmail.com" method="POST">
-          <input type="hidden" name="_subject" value="New Toolify contact message">
-          <input type="hidden" name="_template" value="table">
-          <input type="hidden" name="_captcha" value="false">
-          <div class="contact-card-header">
-            <span>Send a message</span>
-            <p>Share the details and I'll respond as soon as possible.</p>
-          </div>
-          <div class="contact-grid">
-            <div class="contact-field">
-              <label for="contact-name">Name</label>
-              <input id="contact-name" name="name" type="text" autocomplete="name" required placeholder="Your name">
-            </div>
-            <div class="contact-field">
-              <label for="contact-email">Email address</label>
-              <input id="contact-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
-            </div>
-          </div>
-          <div class="contact-field">
-            <label for="contact-subject">Subject</label>
-            <input id="contact-subject" name="subject" type="text" required placeholder="How can I help?">
-          </div>
-          <div class="contact-field">
-            <label for="contact-message">Message</label>
-            <textarea id="contact-message" name="message" required placeholder="Tell me about your request..."></textarea>
-          </div>
-          <div class="contact-submit-row">
-            <span>Usually replies within 24 hours</span>
-            <button type="submit">Send message <span aria-hidden="true">→</span></button>
-          </div>
-        </form>
-        <aside class="contact-info-card">
-          <h2>Direct contact</h2>
-          <p>For product feedback, support, or collaboration opportunities, email Taha directly.</p>
-          <div class="contact-actions">
-            <a class="primary" href="mailto:tahaamin.dev@gmail.com">Email Taha</a>
-            <a href="https://github.com/tahaamindev" target="_blank" rel="noopener noreferrer">GitHub</a>
-            <a href="https://tahaamindev.github.io/TAHA/" target="_blank" rel="noopener noreferrer">Developer portfolio</a>
-          </div>
-        </aside>
+      <div class="contact-info-card contact-info-only">
+        <h2>Direct contact</h2>
+        <div class="contact-actions">
+          <a class="primary" href="tel:+923255581504">+92325 5581504</a>
+          <a href="https://tahaamindev.github.io/TAHA/" target="_blank" rel="noopener noreferrer">Portfolio</a>
+          <a href="https://github.com/tahaamindev" target="_blank" rel="noopener noreferrer">GitHub Profile</a>
+        </div>
       </div>
     </div>`;
   authPage.setAttribute('aria-hidden', 'true');
@@ -1721,7 +1684,8 @@ document.querySelectorAll('[data-public-page="contact"]').forEach(button => butt
 document.querySelectorAll('[data-close-public-page]').forEach(button => button.addEventListener('click', closePublicPage));
 document.querySelectorAll('[data-download-app]').forEach(button => button.addEventListener('click', downloadToolify));
 
-document.getElementById('auth-platform-label').textContent = 'Install with Chrome';
+const authPlatformLabel = document.getElementById('auth-platform-label');
+if(authPlatformLabel) authPlatformLabel.textContent = 'Install with Chrome';
 
 document.querySelectorAll('.password-toggle').forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -1735,11 +1699,7 @@ document.querySelectorAll('.password-toggle').forEach(btn=>{
       : '<svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>';
   });
 });
-document.getElementById('account-signout').addEventListener('click',async()=>{
-  manualSignOut=true;
-  const {error}=await supabaseClient.auth.signOut();
-  if(error){manualSignOut=false;toast('Could not sign out','error');}
-});
+document.getElementById('account-signout').addEventListener('click',()=>signOut());
 
 // Service Worker registration (offline + auto-update)
 if('serviceWorker' in navigator){
@@ -1758,6 +1718,10 @@ if('serviceWorker' in navigator){
   }).catch((err)=>console.log('SW registration failed:',err));
 }
 
-init();
+init().catch(error=>{
+  console.error('Toolify startup failed:',error);
+  document.getElementById('auth-screen').style.display='flex';
+  authMessage(error?.message || 'Could not start Toolify.',true);
+});
 
 })();

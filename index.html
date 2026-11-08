@@ -8,12 +8,12 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111312">
 <title>Toolify —  Tool Library</title>
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<section id="auth-screen">
+<section id="auth-screen" style="display:flex">
   <nav class="auth-nav" aria-label="Toolify navigation">
     <a class="auth-nav-brand" href="#" aria-label="Toolify home"><img src="logo.png?v=3" alt="">Toolify</a>
     <div class="auth-nav-links">
@@ -38,7 +38,10 @@
         <div class="auth-field" id="auth-confirm-wrap" style="display:none"><label for="auth-confirm">Confirm password</label><div class="password-wrap"><input id="auth-confirm" type="password" autocomplete="new-password" minlength="6" placeholder="Repeat password"><button type="button" class="password-toggle" data-target="auth-confirm" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div>
         <div class="auth-actions"><button class="auth-primary" id="auth-submit" type="submit">Sign in</button></div>
       </form>
-      <div class="auth-links"><button type="button" id="auth-toggle">Create account</button></div>
+      <div class="auth-links">
+        <button type="button" id="auth-forgot">Forgot password?</button>
+        <button type="button" id="auth-toggle">New to Toolify? Sign up</button>
+      </div>
       <div class="auth-message" id="auth-message" role="status"></div>
     </div>
   </div>
@@ -121,6 +124,31 @@
       <div class="grid" id="tool-grid"></div>
     </div>
   </main>
+</div>
+
+<!-- ============ PASSWORD RESET ============ -->
+<div class="overlay" id="password-reset-overlay">
+  <div class="modal" style="max-width:400px;" role="dialog" aria-modal="true" aria-labelledby="password-reset-title">
+    <div class="modal-header">
+      <div class="modal-title" id="password-reset-title">Set a new password</div>
+      <button class="modal-close" id="password-reset-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="field-label" for="password-reset-new">New password</label>
+        <input class="field-input" id="password-reset-new" type="password" minlength="6" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label class="field-label" for="password-reset-confirm">Confirm new password</label>
+        <input class="field-input" id="password-reset-confirm" type="password" minlength="6" autocomplete="new-password">
+      </div>
+      <div class="field-error" id="password-reset-error" style="display:block"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="password-reset-cancel">Cancel</button>
+      <button class="btn btn-solid" id="password-reset-save">Update password</button>
+    </div>
+  </div>
 </div>
 
 <!-- ============ ADD/EDIT TOOL MODAL ============ -->
@@ -234,7 +262,6 @@
         <button class="settings-nav-item" data-panel="backup">Backup &amp; Restore</button>
         <button class="settings-nav-item" data-panel="appearance">Appearance</button>
         <button class="settings-nav-item" data-panel="data">Data</button>
-        <button class="settings-nav-item" data-panel="reportbug">Report a Bug</button>
         <button class="settings-nav-item" data-panel="about">About</button>
       </div>
       <div class="settings-panel" id="settings-panel"></div>
@@ -245,6 +272,6 @@
 <input type="file" id="import-file-input" accept="application/json" style="display:none;">
 <div id="toast-stack" aria-live="polite"></div>
 
-<script src="app.js?v=3"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

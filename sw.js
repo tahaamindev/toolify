@@ -1,7 +1,7 @@
 // ============================================================
 // TOOLIFY — Service Worker (Offline + Auto-Update)
 // ============================================================
-const CACHE_NAME = 'toolify-v11';
+const CACHE_NAME = 'toolify-v14';
 const APP_SHELL = ['./', './index.html', './styles.css', './app.js', './manifest.json', './logo.png', './logo-192.png', './logo-512.png'];
 
 // Install: cache the app shell
@@ -48,6 +48,14 @@ self.addEventListener('fetch', (event) => {
 
   // Other same-origin assets: cache first, network fallback
   event.respondWith(
-    caches.match(request).then((cached) => cached || fetch(request))
+    caches.match(request, { ignoreSearch: true }).then((cached) => {
+      if(cached) return cached;
+      return fetch(request).then((response) => {
+        if(response.ok){
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+        }
+        return response;
+      });
+    })
   );
 });
