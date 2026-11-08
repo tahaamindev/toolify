@@ -302,7 +302,7 @@ function playClickSound(){
     else if(pref === 'ding'){ osc.type='sine'; osc.frequency.setValueAtTime(880, now); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.0001, now+0.25); osc.start(now); osc.stop(now+0.25); }
   }catch(e){}
 }
-function toast(msg, type){
+function toast(msg, type, duration=2600){
   const stack = document.getElementById('toast-stack');
   const el = document.createElement('div');
   el.className = 'toast' + (type === 'error' ? ' error' : '');
@@ -315,7 +315,11 @@ function toast(msg, type){
   setTimeout(()=>{
     el.classList.add('leaving');
     setTimeout(()=>el.remove(), 200);
-  }, 2600);
+  }, duration);
+}
+
+function showLaunchAnnouncement(){
+  toast('Toolify by Tersynex is launching its own Daily Use Tools soon!', null, 7000);
 }
 
 /* ============================================================
@@ -1846,7 +1850,7 @@ let manualSignOut=false;
 let recoveryActive=false;
 function authMessage(message,isError=false){const el=document.getElementById('auth-message');el.textContent=message;el.classList.toggle('error',isError);}
 function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit'),toggle=document.getElementById('auth-toggle'),forgot=document.getElementById('auth-forgot');const isSignup=mode==='signup';document.getElementById('auth-confirm-wrap').style.display=isSignup?'block':'none';document.getElementById('auth-password-wrap').style.display='block';document.getElementById('auth-password').required=true;document.getElementById('auth-confirm').required=isSignup;title.textContent=isSignup?'Create your account':'Welcome back';sub.textContent=isSignup?'Create an account to keep your tools synced securely.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=isSignup?'Create account':'Sign in';toggle.textContent=isSignup?'Already have an account? Sign in':'New to Toolify? Sign up';forgot.style.display=isSignup?'none':'block';authMessage('');}
-async function showAuthenticatedApp(user){if(currentUser && currentUser.id === user.id) return;currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click',quickTools:undefined,notes:[]};libraryLoading=true;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('mac-signout').title=user.email||'Sign out';render();try{await DB.open();await initAppData();try{await DB.syncForUser(user);const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);libraryLoading=false;applyTheme();render();}catch(e){console.error('Cloud sync failed:',e);libraryLoading=false;render();toast('Offline: showing saved library','error');}}catch(e){libraryLoading=false;render();console.error(e);authMessage('Could not open your library: '+(e.message||'Please try again.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
+async function showAuthenticatedApp(user){if(currentUser && currentUser.id === user.id) return;currentUser=user;State.tools=[];State.categories=[];State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click',quickTools:undefined,notes:[]};libraryLoading=true;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('mac-signout').title=user.email||'Sign out';showLaunchAnnouncement();render();try{await DB.open();await initAppData();try{await DB.syncForUser(user);const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);libraryLoading=false;applyTheme();render();}catch(e){console.error('Cloud sync failed:',e);libraryLoading=false;render();toast('Offline: showing saved library','error');}}catch(e){libraryLoading=false;render();console.error(e);authMessage('Could not open your library: '+(e.message||'Please try again.'),true);document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}}
 async function initAppData(){try{const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);}catch(e){toast('Could not load saved data','error');}ensureUncategorized();const ids=new Set(State.categories.map(c=>c.id));let fixed=false;State.tools.forEach(t=>{if(!ids.has(t.categoryId)){t.categoryId=UNCATEGORIZED_ID;fixed=true;}});if(fixed)await DB.bulkPut('tools',State.tools);if(!State.categories.length)ensureUncategorized();await DB.bulkPut('categories',State.categories);applyTheme();State.ui.activeNav=State.tools.some(t=>t.favorite)?'favorites':'all';wireEvents();render();}
 async function init(){
   if(!supabaseClient){
