@@ -201,7 +201,8 @@ a{color:inherit;}
 .notes-composer button{padding:8px; border:none; border-radius:7px; background:var(--accent-strong); color:#08150f; font-weight:650;}
 .notes-list-wrap{height:50%; min-height:0; display:flex; flex-direction:column; padding:14px; gap:8px;}
 .notes-list{min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:7px;}
-.quick-note-item{position:relative; padding:9px 30px 9px 10px; border:1px solid var(--border-subtle); border-radius:8px; background:var(--bg-elev-2); font-size:12px; white-space:pre-wrap; overflow-wrap:anywhere;}
+.quick-note-item{position:relative; padding:9px 30px 9px 10px; border:1px solid var(--border-subtle); border-radius:8px; background:var(--bg-elev-2); font-size:12px; white-space:pre-wrap; overflow-wrap:anywhere; cursor:pointer;}
+.quick-note-item:hover{border-color:var(--border-med); background:var(--bg-elev-3);}
 .quick-note-delete{position:absolute; right:6px; top:6px; width:22px; height:22px; border:none; border-radius:6px; background:transparent; color:var(--text-tertiary); font-size:16px;}
 .quick-note-delete:hover{background:rgba(244,63,94,.12); color:#fb7185;}
 .quick-note-empty{font-size:11px; color:var(--text-tertiary); padding-top:4px;}

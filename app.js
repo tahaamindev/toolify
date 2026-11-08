@@ -194,10 +194,28 @@ function renderQuickNotes(){
   const list = document.getElementById('quick-notes-list');
   if(!list) return;
   list.innerHTML = notesList().length
-    ? notesList().slice().reverse().map(note=>`<div class="quick-note-item">${escapeHTML(note.text)}<button class="quick-note-delete" type="button" data-delete-note="${escapeHTML(note.id)}" aria-label="Delete note">&times;</button></div>`).join('')
+    ? notesList().slice().reverse().map(note=>`<div class="quick-note-item" role="button" tabindex="0" data-load-note="${escapeHTML(note.id)}">${escapeHTML(note.text)}<button class="quick-note-delete" type="button" data-delete-note="${escapeHTML(note.id)}" aria-label="Delete note">&times;</button></div>`).join('')
     : '<div class="quick-note-empty">No saved notes yet.</div>';
+  list.querySelectorAll('[data-load-note]').forEach(item=>{
+    const loadNote = ()=>{
+      const note = notesList().find(savedNote=>savedNote.id === item.dataset.loadNote);
+      if(!note) return;
+      const input = document.getElementById('quick-note-input');
+      input.value = note.text;
+      input.focus();
+    };
+    item.addEventListener('click', loadNote);
+    item.addEventListener('keydown', event=>{
+      if(event.key === 'Enter' || event.key === ' '){
+        event.preventDefault();
+        loadNote();
+      }
+    });
+  });
   list.querySelectorAll('[data-delete-note]').forEach(button=>{
-    button.addEventListener('click', async ()=>{
+    button.addEventListener('keydown', event=>event.stopPropagation());
+    button.addEventListener('click', async (event)=>{
+      event.stopPropagation();
       State.settings.notes = notesList().filter(note=>note.id !== button.dataset.deleteNote);
       await persistSettings();
       renderQuickNotes();
@@ -548,8 +566,10 @@ function showToolContextMenu(x, y, tool, type='library'){
     sidebarAction.dataset.contextAction = 'sidebar';
     removeAction.textContent = 'Remove';
   }
-  menu.style.left = `${Math.min(x, window.innerWidth - 210)}px`;
-  menu.style.top = `${Math.min(y, window.innerHeight - 210)}px`;
+  menu.classList.remove('open');
+  void menu.offsetWidth;
+  menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - 210))}px`;
+  menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - 210))}px`;
   menu.classList.add('open');
   menu.setAttribute('aria-hidden', 'false');
 }
@@ -1325,6 +1345,68 @@ function renderSettingsPanel(panelName){
       document.getElementById('reset-input').value = '';
       document.getElementById('reset-ok').disabled = true;
       document.getElementById('reset-overlay').classList.add('open');
+    });
+  }
+
+  else if(panelName === 'report'){
+    panel.innerHTML = `
+      <h3>Report a Bug</h3>
+      <div class="panel-sub">Tell us what went wrong so we can improve Toolify.</div>
+      <form class="report-form" id="bug-report-form">
+        <div class="field">
+          <label class="field-label" for="bug-name">Name</label>
+          <input class="field-input" id="bug-name" name="name" autocomplete="name" value="${escapeHTML(currentUser?.user_metadata?.full_name || '')}" placeholder="Your name">
+        </div>
+        <div class="field">
+          <label class="field-label" for="bug-email">Email</label>
+          <input class="field-input" id="bug-email" name="email" type="email" autocomplete="email" value="${escapeHTML(currentUser?.email || '')}" required placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label class="field-label" for="bug-type">Issue type</label>
+          <select class="field-select" id="bug-type" name="issue_type">
+            <option value="Bug">Bug</option>
+            <option value="Interface problem">Interface problem</option>
+            <option value="Feature request">Feature request</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="bug-message">What happened?</label>
+          <textarea class="field-textarea" id="bug-message" name="message" required minlength="10" maxlength="3000" placeholder="Describe the problem, what you expected, and the steps to reproduce it..."></textarea>
+        </div>
+        <input type="hidden" name="_subject" value="Toolify Bug Report">
+        <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="app_version" value="${escapeHTML(APP_VERSION)}">
+        <button class="btn btn-solid" id="bug-report-submit" type="submit">Send Report</button>
+      </form>
+    `;
+
+    document.getElementById('bug-report-form').addEventListener('submit', async event=>{
+      event.preventDefault();
+      const form = event.currentTarget;
+      if(!form.reportValidity()) return;
+      const button = document.getElementById('bug-report-submit');
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Sending…';
+      try{
+        const response = await fetch('https://formsubmit.co/ajax/tahaamin.dev@gmail.com',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Accept':'application/json'},
+          body:JSON.stringify(Object.fromEntries(new FormData(form).entries()))
+        });
+        const result = await response.json().catch(()=>null);
+        if(!response.ok || result?.success === false) throw new Error(result?.message || 'Could not send the report.');
+        form.reset();
+        if(currentUser?.email) document.getElementById('bug-email').value = currentUser.email;
+        toast('Bug report sent successfully.');
+      }catch(error){
+        toast(error.message || 'Could not send the report.', 'error');
+      }finally{
+        button.disabled = false;
+        button.textContent = originalText;
+      }
     });
   }
 
