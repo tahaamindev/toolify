@@ -612,6 +612,7 @@ function openTool(tool){
 function render(){
   renderSidebar();
   renderQuickTools();
+  renderQuickNotes();
   renderGrid();
   document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===State.settings.view));
   document.getElementById('sort-label').textContent = {newest:'Newest',oldest:'Oldest',az:'A – Z',za:'Z – A',recent:'Recently opened'}[State.settings.sort];
@@ -1160,10 +1161,19 @@ function renderSettingsPanel(panelName){
     const tools = quickToolsList();
     panel.innerHTML = `
       <h3>Sidebar</h3>
-      <div class="panel-sub">Add, reorder-free, or remove shortcuts shown in the right-side toolbar. Changes sync with your Toolify account.</div>
+      <div class="panel-sub">Add, drag to reorder, or remove shortcuts shown in the right-side toolbar. Changes sync with your Toolify account.</div>
+      <div class="sidebar-tool-form sidebar-tool-form-top">
+        <div class="sidebar-tool-form-title">Add shortcut</div>
+        <div class="sidebar-tool-fields">
+          <input class="field-input" id="sidebar-tool-name" maxlength="40" placeholder="Tool name">
+          <input class="field-input" id="sidebar-tool-url" maxlength="500" placeholder="example.com">
+        </div>
+        <button class="btn btn-solid" id="sidebar-tool-add">Add Shortcut</button>
+      </div>
       <div class="sidebar-tool-list">
         ${tools.map(tool=>`
-          <div class="sidebar-tool-row" data-sidebar-tool="${escapeHTML(tool.id)}">
+          <div class="sidebar-tool-row" data-sidebar-tool="${escapeHTML(tool.id)}" draggable="true">
+            <span class="sidebar-tool-drag" aria-hidden="true">⋮⋮</span>
             <img src="${escapeHTML(faviconURL(tool.url))}" alt="">
             <div class="sidebar-tool-info">
               <div class="sidebar-tool-name">${escapeHTML(tool.name)}</div>
@@ -1174,14 +1184,6 @@ function renderSettingsPanel(panelName){
             </button>
           </div>
         `).join('')}
-      </div>
-      <div class="sidebar-tool-form">
-        <div class="sidebar-tool-form-title">Add shortcut</div>
-        <div class="sidebar-tool-fields">
-          <input class="field-input" id="sidebar-tool-name" maxlength="40" placeholder="Tool name">
-          <input class="field-input" id="sidebar-tool-url" maxlength="500" placeholder="example.com">
-        </div>
-        <button class="btn btn-solid" id="sidebar-tool-add">Add Shortcut</button>
       </div>
     `;
     panel.querySelectorAll('[data-remove-sidebar-tool]').forEach(button=>{
@@ -1205,6 +1207,35 @@ function renderSettingsPanel(panelName){
       renderQuickTools();
       renderSettingsPanel('sidebar');
       toast('Sidebar shortcut added.');
+    });
+    let draggedToolId = null;
+    panel.querySelectorAll('.sidebar-tool-row').forEach(row=>{
+      row.addEventListener('dragstart', ()=>{
+        draggedToolId = row.dataset.sidebarTool;
+        row.classList.add('dragging');
+      });
+      row.addEventListener('dragend', ()=>{
+        draggedToolId = null;
+        row.classList.remove('dragging');
+        panel.querySelectorAll('.sidebar-tool-row').forEach(item=>item.classList.remove('drag-over'));
+      });
+      row.addEventListener('dragover', event=>{
+        event.preventDefault();
+      });
+      row.addEventListener('drop', async event=>{
+        event.preventDefault();
+        if(!draggedToolId || draggedToolId === row.dataset.sidebarTool) return;
+        const ordered = quickToolsList().slice();
+        const from = ordered.findIndex(tool=>tool.id === draggedToolId);
+        const to = ordered.findIndex(tool=>tool.id === row.dataset.sidebarTool);
+        if(from < 0 || to < 0) return;
+        const [moved] = ordered.splice(from, 1);
+        ordered.splice(to, 0, moved);
+        State.settings.quickTools = ordered;
+        await persistSettings();
+        renderQuickTools();
+        renderSettingsPanel('sidebar');
+      });
     });
   }
 
@@ -1921,12 +1952,13 @@ document.getElementById('auth-forgot').addEventListener('click',async()=>{
 
 async function signOut(){
   manualSignOut=true;
-  const {error}=await supabaseClient.auth.signOut({scope:'global'});
   currentUser=null;
-  await DB.clearLocal();
   document.getElementById('app').style.display='none';
   document.getElementById('auth-screen').style.display='flex';
   setAuthMode('login');
+  const signOutPromise=supabaseClient.auth.signOut({scope:'global'});
+  DB.clearLocal().catch(()=>{});
+  const {error}=await signOutPromise;
   if(error){
     manualSignOut=false;
     console.error('Sign out error:',error);

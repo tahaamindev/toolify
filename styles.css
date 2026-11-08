@@ -172,12 +172,17 @@ a{color:inherit;}
 .sidebar-tool-row{
   display:flex; align-items:center; gap:12px; padding:10px; border:1px solid var(--border-subtle);
   border-radius:10px; background:var(--bg-elev-2);
+  cursor:grab; transition:border-color var(--dur-fast), background var(--dur-fast), opacity var(--dur-fast);
 }
+.sidebar-tool-row.dragging{opacity:.45;}
+.sidebar-tool-row.drag-over{border-color:var(--accent);}
+.sidebar-tool-drag{color:var(--text-tertiary); font-size:16px; letter-spacing:-4px; cursor:grab; user-select:none;}
 .sidebar-tool-row>img{width:28px; height:28px; object-fit:contain; flex-shrink:0;}
 .sidebar-tool-info{min-width:0; flex:1;}
 .sidebar-tool-name{font-size:13px; font-weight:650;}
 .sidebar-tool-url{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; color:var(--text-tertiary);}
 .sidebar-tool-form{margin-top:18px; padding-top:16px; border-top:1px solid var(--border-subtle);}
+.sidebar-tool-form.sidebar-tool-form-top{margin-top:0; margin-bottom:16px; padding-top:0; border-top:none;}
 .sidebar-tool-form-title{font-size:13px; font-weight:650; margin-bottom:10px;}
 .sidebar-tool-fields{display:grid; grid-template-columns:1fr 1.4fr; gap:8px; margin-bottom:10px;}
 .quick-tools-label{
