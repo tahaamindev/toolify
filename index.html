@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111312">
 <title>Toolify —  Tool Library</title>
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="styles.css?v=21">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -108,10 +108,6 @@
         <div class="topbar-title" id="view-title">All Tools</div>
         <div class="topbar-sub" id="view-sub">0 tools</div>
       </div>
-      <div class="launch-announcement" id="launch-announcement" role="status" aria-live="polite" hidden>
-        <span>Toolify is launching its own Daily Use Tools soon!</span>
-        <button type="button" aria-label="Dismiss announcement">&times;</button>
-      </div>
       <div class="topbar-controls">
         <div class="sort-wrap">
           <button class="sort-btn" id="sort-btn">
@@ -136,36 +132,107 @@
     <div class="content-scroll">
       <div class="grid" id="tool-grid"></div>
     </div>
+    <aside class="feature-announcement" id="feature-announcement" aria-label="New features" hidden>
+      <button class="feature-announcement-dismiss" id="feature-announcement-dismiss" type="button" aria-label="Dismiss new features">&times;</button>
+      <div class="feature-announcement-copy">
+        <span class="feature-announcement-eyebrow">NEW IN TOOLIFY</span>
+        <strong>More ways to make Toolify yours</strong>
+        <span>Now you can change the app's theme and also use the new Music Player.</span>
+      </div>
+      <div class="feature-announcement-actions">
+        <button class="feature-action-primary" id="feature-theme-button" type="button">Change theme</button>
+        <button id="feature-music-button" type="button">Open music player</button>
+      </div>
+    </aside>
   </main>
 
-  <!-- ============ QUICK TOOLS ============ -->
-  <aside class="quick-tools" aria-label="Google and other important tools">
-    <button class="quick-tools-add" id="quick-tools-add" type="button" aria-label="Add sidebar tool" title="Add tool">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-    </button>
-    <nav class="quick-tools-nav" id="quick-tools-nav"></nav>
-  </aside>
-  <div class="quick-tool-tooltip" id="quick-tool-tooltip" role="tooltip"></div>
-
-  <aside class="notes-panel" aria-label="Notes">
-    <div class="notes-composer">
-      <div class="notes-panel-title">Notes</div>
-      <textarea id="quick-note-input" maxlength="2000" placeholder="Write a note…"></textarea>
-      <button id="quick-note-add" type="button">Add Note</button>
-    </div>
-    <div class="notes-list-wrap">
-      <div class="notes-list-title">Saved notes</div>
-      <div class="notes-list" id="quick-notes-list"></div>
+  <!-- ============ RIGHT SIDEBAR ============ -->
+  <aside class="quick-tools" aria-label="Workspace sidebar">
+    <nav class="quick-tools-rail" aria-label="Sidebar panels">
+      <button class="quick-tools-tab active" type="button" data-right-panel="home" data-tooltip="Workspace" aria-label="Workspace" aria-pressed="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.8 12 4l9 6.8v8.7a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 19.5v-8.7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 21v-7h6v7" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="quick-tools-tab" id="music-player-toggle" type="button" data-right-panel="music" data-tooltip="Music player" aria-label="Music player" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 18V5l12-2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8"/></svg>
+      </button>
+      <button class="quick-tools-tab" type="button" data-right-panel="notes" data-tooltip="Notes" aria-label="Notes" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 3.5h9l4 4v13H6a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 4v5h5M8 13h8M8 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </nav>
+    <div class="quick-tools-panel">
+      <section class="right-home-panel" id="right-home-panel" aria-label="Workspace overview">
+        <div class="music-player-title">Your workspace</div>
+        <div class="music-player-subtitle">A quick look at your Toolify library.</div>
+        <div class="workspace-stats">
+          <div><strong id="workspace-tool-count">0</strong><span>Tools in your library</span></div>
+          <div><strong id="workspace-favorite-count">0</strong><span>Saved favorites</span></div>
+        </div>
+        <div class="workspace-hint">Keep your favorite tools close, and use Notes or Music whenever you need them.</div>
+      </section>
+      <section class="music-player" id="music-player" aria-label="Music player" hidden>
+        <div class="music-player-top">
+          <div class="music-player-title">Music</div>
+          <button class="music-add-toggle" type="button" data-music-action="add" title="Add music" aria-label="Add music" aria-expanded="false" aria-controls="music-song-form">＋</button>
+        </div>
+        <div class="music-controls-bar" aria-label="Music controls">
+          <div class="music-current-meta">
+            <div class="music-now-playing" id="music-now-playing" aria-live="polite">Nothing playing</div>
+            <div class="music-current-artist" id="music-current-artist">Choose a song</div>
+          </div>
+          <div class="music-progress"><span id="music-time-current">0:00</span><input id="music-seek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span id="music-time-total">0:00</span></div>
+          <div class="music-controls">
+            <button type="button" id="music-previous" title="Previous" aria-label="Previous">|◀</button>
+            <button type="button" id="music-play-pause" title="Play" aria-label="Play">▶</button>
+            <button type="button" id="music-next" title="Next" aria-label="Next">▶|</button>
+            <button type="button" id="music-stop" title="Stop" aria-label="Stop">■</button>
+            <button type="button" id="music-video-toggle" title="Show video" aria-label="Show video" aria-pressed="false">▣</button>
+          </div>
+          <label class="music-volume-control" aria-label="Volume">🔊<input type="range" id="music-volume" min="0" max="100" value="75" aria-label="Volume"></label>
+          <span class="music-playback-state" id="music-playback-state" aria-live="polite">READY</span>
+        </div>
+        <div class="music-video-stage" id="music-video-stage" aria-label="Video">
+          <div class="music-youtube-player-wrap" id="music-youtube-wrap"><div id="music-youtube-player"></div></div>
+          <video id="music-video" playsinline preload="metadata"></video>
+        </div>
+        <audio id="music-audio" preload="metadata" hidden></audio>
+        <div class="music-form music-add-panel" id="music-song-form" hidden>
+          <div class="music-form-title">Add to your library</div>
+          <div class="music-import-row">
+            <label class="music-file-picker" for="music-file-input">Add files</label>
+            <input id="music-file-input" type="file" accept="audio/*,video/mp4,video/webm,.mp4,.m4v,.mov" multiple hidden>
+            <label class="music-file-picker" for="music-folder-input">Add folder</label>
+            <input id="music-folder-input" type="file" accept="audio/*,video/mp4,video/webm,.mp4,.m4v,.mov" webkitdirectory multiple hidden>
+          </div>
+          <input id="music-song-url" type="url" placeholder="Paste a YouTube video link" aria-label="YouTube video link">
+          <div class="music-form-actions"><button type="button" data-music-action="cancel-form">Cancel</button><button type="button" id="music-save-song">Add YouTube link</button></div>
+        </div>
+        <section class="music-library" id="music-library" aria-label="Song list">
+          <div class="music-library-heading"><div class="music-library-title">Songs</div><span class="music-queue-summary" id="music-queue-summary" aria-live="polite">0 songs</span></div>
+          <input id="music-search" type="search" placeholder="Search songs" aria-label="Search songs">
+          <div class="music-library-list" id="music-library-list" aria-label="Song library"></div>
+        </section>
+        <div class="music-status" id="music-status" role="status" aria-live="polite"></div>
+      </section>
+      <section class="notes-panel" id="notes-panel" aria-label="Notes" hidden>
+        <div class="notes-composer">
+          <div class="notes-panel-title">Notes</div>
+          <textarea id="quick-note-input" maxlength="2000" placeholder="Write a note…"></textarea>
+          <button id="quick-note-add" type="button">Add Note</button>
+        </div>
+        <div class="notes-list-wrap">
+          <div class="notes-list-title">Saved notes</div>
+          <div class="notes-list" id="quick-notes-list"></div>
+        </div>
+      </section>
     </div>
   </aside>
 </div>
+<div id="music-youtube-api-host" hidden></div>
 
 <div class="tool-context-menu" id="tool-context-menu" role="menu" aria-hidden="true">
   <button type="button" data-context-action="open">Open</button>
   <button type="button" data-context-action="edit">Edit</button>
   <button type="button" data-context-action="favorite">Add to Favorites</button>
-  <button type="button" data-context-action="sidebar">Add to Sidebar</button>
-  <div class="context-menu-divider"></div>
   <button class="danger" type="button" data-context-action="delete">Remove</button>
 </div>
 
@@ -223,7 +290,7 @@
       <div class="field">
         <label class="field-label" for="f-desc">Short Description</label>
         <textarea class="field-textarea" id="f-desc" maxlength="160" placeholder="What this tool is for…"></textarea>
-      </div>
+        </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="tool-cancel">Cancel</button>
@@ -317,6 +384,6 @@
 <input type="file" id="import-file-input" accept="application/json" style="display:none;">
 <div id="toast-stack" aria-live="polite"></div>
 
-<script src="app.js?v=15"></script>
+<script src="app.js?v=20"></script>
 </body>
 </html>

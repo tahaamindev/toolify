@@ -66,6 +66,52 @@ Contributions, suggestions, and improvements are welcome. Feel free to fork the 
 
 Add your preferred license to the repository.
 
+## Music cloud storage
+
+Music lists sync through the existing Supabase `settings` table. To sync audio/video files between signed-in devices, create a **private** Supabase Storage bucket named `toolify-music`, then add owner-only access policies for the authenticated user's folder. The app uploads each file under `<user-id>/<track-id>.<extension>`.
+
+Run this in the Supabase SQL editor to create the bucket and policies:
+
+```sql
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('toolify-music', 'toolify-music', false, 52428800)
+on conflict (id) do update set public = false;
+
+create policy "Users can upload their own music"
+on storage.objects for insert to authenticated
+with check (
+  bucket_id = 'toolify-music'
+  and (storage.foldername(name))[1] = (select auth.uid()::text)
+);
+
+create policy "Users can read their own music"
+on storage.objects for select to authenticated
+using (
+  bucket_id = 'toolify-music'
+  and (storage.foldername(name))[1] = (select auth.uid()::text)
+);
+
+create policy "Users can update their own music"
+on storage.objects for update to authenticated
+using (
+  bucket_id = 'toolify-music'
+  and (storage.foldername(name))[1] = (select auth.uid()::text)
+)
+with check (
+  bucket_id = 'toolify-music'
+  and (storage.foldername(name))[1] = (select auth.uid()::text)
+);
+
+create policy "Users can delete their own music"
+on storage.objects for delete to authenticated
+using (
+  bucket_id = 'toolify-music'
+  and (storage.foldername(name))[1] = (select auth.uid()::text)
+);
+```
+
+Local media stays available in the browser's IndexedDB as well. YouTube playback requires videos that allow embedding and a secure hosted origin (or localhost); YouTube may block private, age-restricted, or owner-disabled embeds.
+
 ---
 
 **Toolify** — Making digital tool discovery simpler.
