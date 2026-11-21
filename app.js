@@ -107,7 +107,7 @@ const DB = (function(){
         if(local.tools.length)await cloudUpsert('tools',local.tools);
         if(local.settings.length)await cloudUpsert('settings',local.settings);
         if(local.snapshots.length)await cloudUpsert('snapshots',local.snapshots);
-        for(const n of names){const {data,error}=await supabaseClient.from(tableFor[n]).select('*').eq('user_id',user.id);if(error)throw error;remote[n]=(data||[]).map(v=>fromCloud(n,v));}
+        names.forEach(n=>{remote[n]=local[n].slice();});
       }
       await Promise.all(names.map(async n=>{
         await localClear(n);
@@ -200,7 +200,9 @@ const State = {
     lastBackupAt: null,
     landing: "auto",
 clickSound: "click",
-notes: []
+clockTheme: "emerald",
+notes: [],
+tasks: []
   },
   ui: {
     activeNav: "all",   // 'all' | 'favorites' | categoryId
@@ -212,9 +214,24 @@ notes: []
 async function persistSettings(){
   await DB.put("settings", {key:"app", value: State.settings});
 }
+function persistSettingsFast(){
+  persistSettings().catch(error=>{
+    console.error('Cloud sync failed:',error);
+    toast('Saved on this device — cloud sync failed','error');
+  });
+}
+window.addEventListener('toolify:clock-theme-change', event=>{
+  State.settings.clockTheme = event.detail?.theme || 'emerald';
+  persistSettingsFast();
+});
+window.addEventListener('toolify:settings-changed', ()=>persistSettingsFast());
 function notesList(){
   if(!Array.isArray(State.settings.notes)) State.settings.notes = [];
   return State.settings.notes;
+}
+function tasksList(){
+  if(!Array.isArray(State.settings.tasks)) State.settings.tasks = [];
+  return State.settings.tasks;
 }
 
 const MUSIC_THEMES = {
@@ -352,16 +369,28 @@ function musicTrackMetadata(track){
 
 function createMusicSnapshot(){
   try{
-    const key = musicStorageKey('snapshots');
-    const snapshots = JSON.parse(localStorage.getItem(key) || '[]');
+    const music = getMusicSettings();
+    let snapshots = Array.isArray(music.snapshots) ? music.snapshots : [];
+    const legacyKey = musicStorageKey('snapshots');
+    let migrated = false;
+    try{
+      const legacy = JSON.parse(localStorage.getItem(legacyKey) || '[]');
+      if(Array.isArray(legacy) && legacy.length){
+        const known = new Set(snapshots.map(item=>item?.createdAt));
+        snapshots = [...legacy.filter(item=>item && !known.has(item.createdAt)), ...snapshots];
+        localStorage.removeItem(legacyKey);
+        migrated = true;
+      }
+    }catch(legacyError){}
     snapshots.unshift({createdAt:Date.now(), data:musicSnapshotPayload()});
-    localStorage.setItem(key, JSON.stringify(snapshots.slice(0,5)));
+    music.snapshots = snapshots.slice(0,5);
+    if(migrated) window.dispatchEvent(new CustomEvent('toolify:settings-changed'));
     const backupStatus = document.getElementById('music-backup-status');
-    if(backupStatus) backupStatus.textContent = `Automatic local snapshot saved · ${new Date().toLocaleString()}`;
+    if(backupStatus) backupStatus.textContent = `Automatic cloud snapshot saved · ${new Date().toLocaleString()}`;
   }catch(error){
     console.error('Could not create music backup snapshot:', error);
     const backupStatus = document.getElementById('music-backup-status');
-    if(backupStatus) backupStatus.textContent = 'Automatic backup could not be saved in this browser.';
+    if(backupStatus) backupStatus.textContent = 'Automatic cloud backup could not be saved.';
   }
 }
 
@@ -472,8 +501,8 @@ async function saveMusicState(){
   music.queue = musicQueue.filter(id=>musicTracks.some(track=>track.id===id));
   music.shuffle = musicShuffle;
   music.repeat = musicRepeat;
-  await persistSettings();
   createMusicSnapshot();
+  await persistSettings();
 }
 
 function youtubeVideoId(rawUrl){
@@ -1194,6 +1223,8 @@ function setRightPanel(panelName,forceOpen=false){
   document.getElementById('right-home-panel').hidden = panelName !== 'home' || closeMobilePanel;
   document.getElementById('music-player').hidden = panelName !== 'music' || closeMobilePanel;
   document.getElementById('notes-panel').hidden = panelName !== 'notes' || closeMobilePanel;
+  document.getElementById('tasks-panel').hidden = panelName !== 'tasks' || closeMobilePanel;
+  document.getElementById('clock-panel').hidden = panelName !== 'clock' || closeMobilePanel;
   if(panelName==='music'&&!closeMobilePanel) loadYouTubePlayer(true);
 }
 
@@ -1231,10 +1262,76 @@ function renderQuickNotes(){
     button.addEventListener('click', async (event)=>{
       event.stopPropagation();
       State.settings.notes = notesList().filter(note=>note.id !== button.dataset.deleteNote);
-      await persistSettings();
       renderQuickNotes();
+      persistSettingsFast();
     });
   });
+}
+let taskFilter = 'all';
+function renderQuickTasks(){
+  const list = document.getElementById('quick-tasks-list');
+  if(!list) return;
+  const tasks = tasksList();
+  const doneCount = tasks.filter(task=>task.done).length;
+  const leftCount = tasks.length - doneCount;
+  const progressLabel = document.getElementById('tasks-progress-label');
+  const progressBar = document.getElementById('tasks-progress-bar');
+  const remainingLabel = document.getElementById('tasks-remaining');
+  const clearButton = document.getElementById('tasks-clear-done');
+  const markAllButton = document.getElementById('tasks-mark-all');
+  if(progressLabel) progressLabel.textContent = `${doneCount} of ${tasks.length} completed`;
+  if(progressBar) progressBar.style.width = tasks.length ? `${(doneCount / tasks.length) * 100}%` : '0%';
+  if(remainingLabel) remainingLabel.textContent = leftCount === 1 ? '1 task left' : `${leftCount} tasks left`;
+  if(clearButton) clearButton.disabled = doneCount === 0;
+  if(markAllButton) markAllButton.disabled = tasks.length === 0 || leftCount === 0;
+  const visibleTasks = tasks.filter(task=>taskFilter === 'all' || (taskFilter === 'done' ? task.done : !task.done));
+  list.innerHTML = visibleTasks.length
+    ? visibleTasks.slice().reverse().map(task=>{
+        const id = escapeHTML(task.id);
+        return `<div class="quick-task-item${task.done ? ' done' : ''}" data-task-id="${id}">
+          <button class="task-check" type="button" role="checkbox" aria-checked="${!!task.done}" aria-label="${task.done ? 'Mark as not done' : 'Mark as done'}" data-task-toggle="${id}"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <span class="task-text" role="button" tabindex="0" title="Click to edit" data-task-edit="${id}">${escapeHTML(task.text)}</span>
+          <button class="task-action" type="button" aria-label="Delete task" title="Delete task" data-task-delete="${id}"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M9 7V5h6v2M7 7l1 12h8l1-12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>`;
+      }).join('')
+    : `<div class="quick-task-empty">${taskFilter === 'done' ? 'No completed tasks yet.' : taskFilter === 'active' ? 'No active tasks. Nice work!' : 'No tasks yet. Add one above.'}</div>`;
+  document.querySelectorAll('[data-task-filter]').forEach(button=>{
+    const isActive = button.dataset.taskFilter === taskFilter;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
+}
+function beginTaskEdit(id){
+  const item = Array.from(document.querySelectorAll('.quick-task-item')).find(element=>element.dataset.taskId === id);
+  const textElement = item?.querySelector('.task-text');
+  const task = tasksList().find(entry=>entry.id === id);
+  if(!textElement || !task || item.querySelector('.task-edit-input')) return;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'task-edit-input';
+  input.maxLength = 200;
+  input.value = task.text;
+  textElement.replaceWith(input);
+  input.focus();
+  input.select();
+  let finished = false;
+  const finish = (save)=>{
+    if(finished) return;
+    finished = true;
+    const value = input.value.trim();
+    if(save && value && value !== task.text){
+      task.text = value;
+      renderQuickTasks();
+      persistSettingsFast();
+    }else{
+      renderQuickTasks();
+    }
+  };
+  input.addEventListener('keydown', event=>{
+    if(event.key === 'Enter'){ event.preventDefault(); finish(true); }
+    else if(event.key === 'Escape'){ event.preventDefault(); event.stopPropagation(); finish(false); }
+  });
+  input.addEventListener('blur', ()=>finish(true));
 }
 async function persistTool(tool){
   await DB.put("tools", tool);
@@ -1276,20 +1373,14 @@ function toast(msg, type, duration=2600){
   }, duration);
 }
 
-function featureAnnouncementStorageKey(){
-  return `toolify-feature-announcement-dismissed-${currentUser?.id||'anonymous'}`;
-}
-
 function showFeatureAnnouncement(){
   const announcement = document.getElementById('feature-announcement');
-  if(!announcement) return;
-  announcement.hidden=localStorage.getItem(featureAnnouncementStorageKey())==='dismissed';
+  if(announcement) announcement.hidden=false;
 }
 
 function dismissFeatureAnnouncement(){
   const announcement=document.getElementById('feature-announcement');
   if(announcement) announcement.hidden=true;
-  localStorage.setItem(featureAnnouncementStorageKey(),'dismissed');
 }
 
 /* ============================================================
@@ -1427,7 +1518,7 @@ function faviconMarkup(tool){
   if(!src){
     return `<div class="tool-icon-fallback">${escapeHTML(initial)}</div>`;
   }
-  return `<img src="${escapeHTML(src)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<div class=&quot;tool-icon-fallback&quot;>${escapeHTML(initial)}</div>'">`;
+  return `<img src="${escapeHTML(src)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='<div class=&quot;tool-icon-fallback&quot;>${escapeHTML(initial)}</div>'">`;
 }
 
 function renderGrid(){
@@ -1554,6 +1645,7 @@ function openTool(tool){
 function render(){
   renderSidebar();
   renderQuickNotes();
+  renderQuickTasks();
   renderWorkspaceOverview();
   syncMusicState();
   renderGrid();
@@ -1697,8 +1789,8 @@ async function toggleFavorite(id){
   if(!t) return;
   t.favorite = !t.favorite;
   t.updatedAt = nowISO();
-  try{ await persistTool(t); } catch(e){ toast('Could not save favorite state', 'error'); }
   render();
+  persistTool(t).catch(()=>toast('Could not save favorite state', 'error'));
 }
 
 /* ============================================================
@@ -1936,7 +2028,7 @@ async function resetApp(){
   }
   State.tools = [];
   State.categories = [{id:UNCATEGORIZED_ID, name:'Uncategorized', system:true, createdAt: nowISO()}];
-  State.settings = {theme:'dark', view:'grid', sort:'recent', lastBackupAt:null, landing:'auto', clickSound:'click'};
+  State.settings = {theme:'dark', view:'grid', sort:'recent', lastBackupAt:null, landing:'auto', clickSound:'click', clockTheme:'emerald'};
   State.ui.activeNav = 'all';
   applyTheme();
   await persistSettings();
@@ -1961,6 +2053,7 @@ function applyTheme(){
   const accent=/^#[\da-f]{6}$/i.test(State.settings.customAccent||'')?State.settings.customAccent:palette.accent;
   root.style.setProperty('--accent',accent);
   root.style.setProperty('--accent-strong',accent);
+  window.dispatchEvent(new CustomEvent('toolify:apply-clock-theme',{detail:{theme:State.settings.clockTheme||'emerald'}}));
 }
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{
   if(State.settings.theme === 'system') applyTheme();
@@ -2177,7 +2270,7 @@ function renderSettingsPanel(panelName){
     const d = daysSince(State.settings.lastBackupAt);
     panel.innerHTML = `
       <h3>Backup &amp; Restore</h3>
-      <div class="panel-sub">Your data lives in this browser's local storage. Exporting a backup file is the strongest protection against data loss.</div>
+      <div class="panel-sub">Everything in your workspace — tools, categories, notes, tasks, music and automatic snapshots — is stored securely in Supabase and synced across your signed-in devices. A local cache keeps the app fast offline; exporting a backup is still available.</div>
       <div class="reminder-pill" style="margin-bottom:18px;">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         ${State.settings.lastBackupAt ? `Last backup: ${d===0?'today':d+' day'+(d===1?'':'s')+' ago'}` : 'No backup created yet'}
@@ -2539,12 +2632,12 @@ function wireEvents(){
   document.getElementById('mac-about').addEventListener('click', showPublicAbout);
   document.getElementById('mac-contact').addEventListener('click', showPublicContact);
   document.getElementById('feature-announcement-dismiss').addEventListener('click',dismissFeatureAnnouncement);
-  document.getElementById('feature-theme-button').addEventListener('click',()=>{
-    openSettings('appearance');
+  document.getElementById('feature-tasks-button')?.addEventListener('click',()=>{
+    setRightPanel('tasks',true);
     dismissFeatureAnnouncement();
   });
-  document.getElementById('feature-music-button').addEventListener('click',()=>{
-    setRightPanel('music',true);
+  document.getElementById('feature-clock-button')?.addEventListener('click',()=>{
+    setRightPanel('clock',true);
     dismissFeatureAnnouncement();
   });
   document.querySelectorAll('.quick-tools-tab').forEach(button=>{
@@ -2622,7 +2715,7 @@ function wireEvents(){
     hideToolContextMenu();
     if(action === 'open') openTool(tool);
     if(action === 'edit') openToolModal(tool.id);
-    if(action === 'favorite'){ tool.favorite = !tool.favorite; await persistTool(tool); render(); toast(tool.favorite ? 'Added to Favorites.' : 'Removed from Favorites.'); }
+    if(action === 'favorite'){ tool.favorite = !tool.favorite; render(); toast(tool.favorite ? 'Added to Favorites.' : 'Removed from Favorites.'); persistTool(tool).catch(()=>toast('Could not save favorite state','error')); }
     if(action === 'delete') confirmDeleteTool(tool.id);
   });
   document.addEventListener('click', (event)=>{
@@ -2649,7 +2742,7 @@ function wireEvents(){
     State.ui.search = val;
     legacySearchClear?.classList.toggle('show', !!val);
     renderGrid();
-  }, 120);
+  }, 70);
   searchInput.addEventListener('input', (e)=>doSearch(e.target.value));
   legacySearchClear?.addEventListener('click', ()=>{
     searchInput.value=''; State.ui.search=''; legacySearchClear.classList.remove('show'); renderGrid(); searchInput.focus();
@@ -2662,10 +2755,71 @@ function wireEvents(){
     if(!text) return;
     notesList().push({id:uid(), text, createdAt:Date.now()});
     input.value='';
-    await persistSettings();
     renderQuickNotes();
+    persistSettingsFast();
   });
   renderQuickNotes();
+
+  // Tasks
+  const taskInput = document.getElementById('quick-task-input');
+  const taskList = document.getElementById('quick-tasks-list');
+  document.getElementById('tasks-add-form').addEventListener('submit', async (event)=>{
+    event.preventDefault();
+    const text = taskInput.value.trim();
+    if(!text) return;
+    tasksList().push({id:uid(), text, done:false, createdAt:Date.now(), completedAt:null});
+    taskInput.value = '';
+    renderQuickTasks();
+    taskInput.focus();
+    persistSettingsFast();
+  });
+  taskList.addEventListener('click', async (event)=>{
+    const toggle = event.target.closest('[data-task-toggle]');
+    const remove = event.target.closest('[data-task-delete]');
+    const edit = event.target.closest('[data-task-edit]');
+    if(toggle){
+      const task = tasksList().find(entry=>entry.id === toggle.dataset.taskToggle);
+      if(!task) return;
+      task.done = !task.done;
+      task.completedAt = task.done ? Date.now() : null;
+      renderQuickTasks();
+      persistSettingsFast();
+    }else if(remove){
+      State.settings.tasks = tasksList().filter(entry=>entry.id !== remove.dataset.taskDelete);
+      renderQuickTasks();
+      persistSettingsFast();
+    }else if(edit && !taskList.querySelector('.task-edit-input')){
+      beginTaskEdit(edit.dataset.taskEdit);
+    }
+  });
+  taskList.addEventListener('keydown', (event)=>{
+    const edit = event.target.closest('[data-task-edit]');
+    if(edit && (event.key === 'Enter' || event.key === ' ')){
+      event.preventDefault();
+      beginTaskEdit(edit.dataset.taskEdit);
+    }
+  });
+  document.querySelectorAll('[data-task-filter]').forEach(button=>{
+    button.addEventListener('click', ()=>{
+      taskFilter = button.dataset.taskFilter;
+      renderQuickTasks();
+    });
+  });
+  document.getElementById('tasks-mark-all').addEventListener('click', async ()=>{
+    const tasks = tasksList();
+    if(!tasks.length || tasks.every(task=>task.done)) return;
+    const now = Date.now();
+    tasks.forEach(task=>{ if(!task.done){ task.done = true; task.completedAt = now; } });
+    renderQuickTasks();
+    persistSettingsFast();
+  });
+  document.getElementById('tasks-clear-done').addEventListener('click', ()=>{
+    if(!tasksList().some(task=>task.done)) return;
+    State.settings.tasks = tasksList().filter(task=>!task.done);
+    renderQuickTasks();
+    persistSettingsFast();
+  });
+  renderQuickTasks();
 
   // Sort
   const sortBtn = document.getElementById('sort-btn');
@@ -2676,18 +2830,18 @@ function wireEvents(){
     o.addEventListener('click', async (e)=>{
       e.stopPropagation();
       State.settings.sort = o.dataset.sort;
-      await persistSettings();
       sortMenu.classList.remove('open');
       render();
+      persistSettingsFast();
     });
   });
 
   // View toggle
   document.querySelectorAll('.view-btn').forEach(b=>{
-    b.addEventListener('click', async ()=>{
+    b.addEventListener('click', ()=>{
       State.settings.view = b.dataset.view;
-      await persistSettings();
       render();
+      persistSettingsFast();
     });
   });
 
@@ -2826,7 +2980,7 @@ async function showAuthenticatedApp(user){
   currentUser=user;
   State.tools=[];
   State.categories=[];
-  State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click',quickTools:undefined,notes:[]};
+  State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click',clockTheme:'emerald',quickTools:undefined,notes:[],tasks:[]};
   libraryLoading=true;
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app').style.display='flex';
@@ -3160,4 +3314,404 @@ init().catch(error=>{
   authMessage(error?.message || 'Could not start Toolify.',true);
 });
 
+})();
+
+/* ============================================================
+   CLOCK / STOPWATCH / TIMER (right sidebar panel)
+   Kept in its own scope so it shares nothing with the app above.
+   ============================================================ */
+(function(){
+  "use strict";
+
+  const panel = document.getElementById("clock-panel");
+  const widget = document.getElementById("clock-widget");
+  if(!panel || !widget) return;
+
+  const el = (id)=>document.getElementById(id);
+
+  // --- Dial theme menu & internal tabs ---
+  const themeToggle = el("clock-theme-toggle");
+  const themeMenu = el("clock-theme-menu");
+  const themeOptions = panel.querySelectorAll(".clock-theme-option");
+  const tabs = panel.querySelectorAll(".clock-nav-tab");
+  const panels = {
+    clock: el("clock-tab-clock"),
+    stopwatch: el("clock-tab-stopwatch"),
+    timer: el("clock-tab-timer")
+  };
+
+  function setDialTheme(theme, persist=true){
+    const valid = Array.from(themeOptions).some(option=>option.dataset.set === theme);
+    const next = valid ? theme : "emerald";
+    if(next === "emerald") widget.removeAttribute("data-dial-theme");
+    else widget.setAttribute("data-dial-theme", next);
+    themeOptions.forEach(option=>{
+      const active = option.dataset.set === next;
+      option.classList.toggle("active", active);
+      option.setAttribute("aria-checked", String(active));
+    });
+    if(persist) window.dispatchEvent(new CustomEvent("toolify:clock-theme-change",{detail:{theme:next}}));
+  }
+  function closeThemeMenu(){
+    if(!themeMenu) return;
+    themeMenu.hidden = true;
+    themeToggle.setAttribute("aria-expanded","false");
+  }
+  if(themeToggle && themeMenu){
+    themeToggle.addEventListener("click", (event)=>{
+      event.stopPropagation();
+      const open = themeMenu.hidden;
+      themeMenu.hidden = !open;
+      themeToggle.setAttribute("aria-expanded", String(open));
+    });
+    themeOptions.forEach(option=>{
+      option.addEventListener("click", ()=>{
+        setDialTheme(option.dataset.set);
+        closeThemeMenu();
+      });
+    });
+    document.addEventListener("click", (event)=>{
+      if(!event.target.closest(".clock-theme-picker")) closeThemeMenu();
+    });
+  }
+  window.addEventListener("toolify:apply-clock-theme", (event)=>setDialTheme(event.detail?.theme||"emerald", false));
+
+  tabs.forEach((tab)=>{
+    tab.addEventListener("click", ()=>{
+      tabs.forEach((t)=>{
+        t.classList.remove("active");
+        t.setAttribute("aria-selected","false");
+      });
+      tab.classList.add("active");
+      tab.setAttribute("aria-selected","true");
+      const target = tab.dataset.tab;
+      Object.keys(panels).forEach((key)=>panels[key].classList.toggle("active", key === target));
+      requestAnimationFrame(layoutAllDials);
+    });
+  });
+
+  // --- Build ticks & numerals for all analog dials ---
+  const allDials = panel.querySelectorAll(".clock-analog-dial");
+
+  allDials.forEach((dial)=>{
+    const ticksBox = dial.querySelector(".clock-ticks");
+    for(let i=0;i<60;i++){
+      const tick = document.createElement("div");
+      tick.className = i % 5 === 0 ? "clock-tick major" : "clock-tick";
+      tick.style.transform = `translateX(-50%) rotate(${i*6}deg)`;
+      ticksBox.appendChild(tick);
+    }
+  });
+
+  function layoutDial(dial){
+    const numBox = dial.querySelector(".clock-numerals");
+    numBox.innerHTML = "";
+    const size = dial.offsetWidth || 228;
+    dial.style.setProperty("--clock-dial-size", `${size}px`);
+    const tickOrigin = `50% ${size/2 - 7}px`;
+    dial.querySelectorAll(".clock-tick").forEach((tick)=>{ tick.style.transformOrigin = tickOrigin; });
+    const radius = size * 0.345;
+    const center = size / 2;
+    const isChrono = dial.dataset.dial === "stopwatch";
+
+    for(let n=1;n<=12;n++){
+      const rad = ((n*30 - 90)*Math.PI)/180;
+      const x = center + radius*Math.cos(rad);
+      const y = center + radius*Math.sin(rad);
+      const span = document.createElement("span");
+      span.className = "clock-numeral" + ([12,3,6,9].includes(n) ? " cardinal" : "");
+      span.textContent = isChrono ? (n === 12 ? "60" : String(n*5)) : String(n);
+      span.style.left = `${x}px`;
+      span.style.top = `${y}px`;
+      span.style.transform = "translate(-50%, -50%)";
+      numBox.appendChild(span);
+    }
+  }
+
+  function layoutAllDials(){ allDials.forEach(layoutDial); }
+
+  layoutAllDials();
+  requestAnimationFrame(layoutAllDials);
+  window.addEventListener("load", layoutAllDials);
+  window.addEventListener("resize", layoutAllDials);
+  if("MutationObserver" in window){
+    new MutationObserver(()=>{ if(!panel.hidden) requestAnimationFrame(layoutAllDials); })
+      .observe(panel,{attributes:true,attributeFilter:["hidden"]});
+  }
+
+  // --- 1. Clock ---
+  const hourHand = el("clock-hour-hand");
+  const minuteHand = el("clock-minute-hand");
+  const secondHand = el("clock-second-hand");
+  const dialDate = el("clock-dial-date");
+  const dialMeridiem = el("clock-dial-meridiem");
+  const digitalClock = el("clock-digital-clock");
+  const digitalAmpm = el("clock-digital-ampm");
+  const digitalDate = el("clock-digital-date");
+  const tzSelect = el("clock-tz-select");
+  const hourFormatBtn = el("clock-hour-format-btn");
+
+  let is24h = false;
+  let selectedTz = "local";
+
+  hourFormatBtn.addEventListener("click", ()=>{
+    is24h = !is24h;
+    hourFormatBtn.textContent = is24h ? "24H" : "12H";
+    hourFormatBtn.setAttribute("aria-pressed", String(is24h));
+    digitalAmpm.style.display = is24h ? "none" : "inline";
+  });
+
+  tzSelect.addEventListener("change", (e)=>{ selectedTz = e.target.value; });
+
+  function getClockParts(now, tz){
+    if(tz === "local"){
+      return {
+        h:now.getHours(), m:now.getMinutes(), s:now.getSeconds(), ms:now.getMilliseconds(),
+        dayNum:String(now.getDate()),
+        dateText:now.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})
+      };
+    }
+    const fmt = new Intl.DateTimeFormat("en-US",{
+      timeZone:tz, hour12:false, year:"numeric", month:"short", day:"numeric", weekday:"short",
+      hour:"2-digit", minute:"2-digit", second:"2-digit"
+    });
+    const map = Object.fromEntries(fmt.formatToParts(now).map((p)=>[p.type,p.value]));
+    let h = parseInt(map.hour,10);
+    if(h === 24) h = 0;
+    return {
+      h, m:parseInt(map.minute,10), s:parseInt(map.second,10), ms:now.getMilliseconds(),
+      dayNum:map.day, dateText:`${map.weekday}, ${map.month} ${map.day}`
+    };
+  }
+
+  function updateClock(now){
+    const {h,m,s,ms,dayNum,dateText} = getClockParts(now, selectedTz);
+    const secSmooth = s + ms/1000;
+    const minSmooth = m + secSmooth/60;
+    const hrSmooth = (h%12) + minSmooth/60;
+
+    secondHand.style.transform = `translateX(-50%) rotate(${secSmooth*6}deg)`;
+    minuteHand.style.transform = `translateX(-50%) rotate(${minSmooth*6}deg)`;
+    hourHand.style.transform = `translateX(-50%) rotate(${hrSmooth*30}deg)`;
+
+    const ampm = h >= 12 ? "PM" : "AM";
+    const dispH = is24h ? String(h).padStart(2,"0") : String(h%12 || 12).padStart(2,"0");
+    digitalClock.textContent = `${dispH}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    digitalAmpm.textContent = ampm;
+    digitalDate.textContent = dateText;
+    dialDate.textContent = dayNum;
+    dialMeridiem.textContent = ampm;
+  }
+
+  // --- 2. Stopwatch (analog + digital) ---
+  const swSecHand = el("clock-sw-sec-hand");
+  const swSubHand = el("clock-sw-sub-hand");
+  const swDialState = el("clock-sw-dial-state");
+  const swMain = el("clock-sw-main");
+  const swCs = el("clock-sw-cs");
+  const swStatus = el("clock-sw-status");
+  const swStartBtn = el("clock-sw-start-btn");
+  const swLapBtn = el("clock-sw-lap-btn");
+  const swResetBtn = el("clock-sw-reset-btn");
+  const swLapsEl = el("clock-sw-laps");
+
+  let swRunning = false, swStartPerf = 0, swElapsedMs = 0, swLastLapTotal = 0, laps = [];
+
+  function renderStopwatchVisual(elapsed){
+    const totalHundredths = Math.floor(elapsed/10);
+    const hundredths = totalHundredths%100;
+    const totalSec = Math.floor(totalHundredths/100);
+    const sec = totalSec%60;
+    const min = Math.floor(totalSec/60);
+
+    swSecHand.style.transform = `translateX(-50%) rotate(${((elapsed/1000)%60)*6}deg)`;
+    swSubHand.style.transform = `translateX(-50%) rotate(${((elapsed/60000)%60)*6}deg)`;
+    swMain.textContent = `${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}.${Math.floor(hundredths/10)}`;
+    swCs.textContent = String(hundredths%10);
+  }
+
+  function formatLapDuration(ms){
+    const totalSec = Math.floor(ms/1000);
+    const cs = Math.floor((ms%1000)/10);
+    return `${String(Math.floor(totalSec/60)).padStart(2,"0")}:${String(totalSec%60).padStart(2,"0")}.${String(cs).padStart(2,"0")}`;
+  }
+
+  function renderLaps(){
+    if(!laps.length){ swLapsEl.innerHTML = '<div class="clock-laps-empty">No laps recorded yet</div>'; return; }
+    const durations = laps.map((l)=>l.duration);
+    const minDur = durations.length >= 2 ? Math.min(...durations) : null;
+    const maxDur = durations.length >= 2 ? Math.max(...durations) : null;
+    swLapsEl.innerHTML = laps.slice().reverse().map((lap)=>{
+      let tag = "";
+      if(minDur !== null && maxDur !== null && minDur !== maxDur){
+        if(lap.duration === minDur) tag = '<span class="clock-lap-tag clock-lap-fast">Fastest</span>';
+        else if(lap.duration === maxDur) tag = '<span class="clock-lap-tag clock-lap-slow">Slowest</span>';
+      }
+      return `<div class="clock-lap-row"><span class="clock-lap-index">Lap ${lap.num}${tag}</span><strong>${formatLapDuration(lap.duration)}</strong></div>`;
+    }).join("");
+  }
+
+  swStartBtn.addEventListener("click", ()=>{
+    if(!swRunning){
+      swRunning = true;
+      swStartPerf = performance.now() - swElapsedMs;
+      swStartBtn.textContent = "Pause";
+      swLapBtn.disabled = false;
+      swStatus.textContent = "Running";
+      swDialState.textContent = "RUN";
+    }else{
+      swRunning = false;
+      swElapsedMs = performance.now() - swStartPerf;
+      swStartBtn.textContent = "Resume";
+      swLapBtn.disabled = true;
+      swStatus.textContent = "Paused";
+      swDialState.textContent = "HOLD";
+    }
+  });
+
+  swLapBtn.addEventListener("click", ()=>{
+    if(!swRunning) return;
+    const currentTotal = performance.now() - swStartPerf;
+    laps.push({num:laps.length+1, duration:currentTotal - swLastLapTotal});
+    swLastLapTotal = currentTotal;
+    renderLaps();
+  });
+
+  swResetBtn.addEventListener("click", ()=>{
+    swRunning = false;
+    swElapsedMs = 0;
+    swLastLapTotal = 0;
+    laps = [];
+    swStartBtn.textContent = "Start";
+    swLapBtn.disabled = true;
+    swStatus.textContent = "Ready";
+    swDialState.textContent = "READY";
+    renderStopwatchVisual(0);
+    renderLaps();
+  });
+
+  // --- 3. Timer (analog + digital) ---
+  const tmHr = el("clock-tm-hr");
+  const tmMin = el("clock-tm-min");
+  const tmSec = el("clock-tm-sec");
+  const tmSecHand = el("clock-tm-sec-hand");
+  const tmRing = el("clock-tm-ring");
+  const tmDialState = el("clock-tm-dial-state");
+  const tmDisplay = el("clock-tm-display");
+  const tmStatus = el("clock-tm-status");
+  const tmStartBtn = el("clock-tm-start-btn");
+  const tmResetBtn = el("clock-tm-reset-btn");
+  const presetChips = panel.querySelectorAll(".clock-preset-chip");
+
+  let tmTotalMs = 5*60*1000, tmRemainingMs = tmTotalMs, tmRunning = false, tmEndPerf = 0;
+
+  function playChime(){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [523.25,659.25,783.99].forEach((freq,idx)=>{
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(.08,ctx.currentTime + idx*.16);
+        gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime + idx*.16 + .5);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + idx*.16);
+        osc.stop(ctx.currentTime + idx*.16 + .55);
+      });
+    }catch(_){}
+  }
+
+  function formatTimer(ms){
+    const clamped = Math.max(0,Math.ceil(ms/1000));
+    const h = Math.floor(clamped/3600);
+    const m = Math.floor((clamped%3600)/60);
+    const s = clamped%60;
+    if(h > 0) return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  function renderTimerVisual(remMs,totalMs){
+    const formatted = formatTimer(remMs);
+    tmDisplay.textContent = formatted;
+    tmDialState.textContent = formatted;
+    tmSecHand.style.transform = `translateX(-50%) rotate(${((remMs/1000)%60)*6}deg)`;
+    const ratio = totalMs > 0 ? Math.max(0,Math.min(1,remMs/totalMs)) : 0;
+    tmRing.style.setProperty("--timer-angle",`${ratio*360}deg`);
+  }
+
+  function syncTimerFromInputs(){
+    const h = Math.max(0,Math.min(23,parseInt(tmHr.value,10) || 0));
+    const m = Math.max(0,Math.min(59,parseInt(tmMin.value,10) || 0));
+    const s = Math.max(0,Math.min(59,parseInt(tmSec.value,10) || 0));
+    tmTotalMs = (h*3600 + m*60 + s)*1000;
+    tmRemainingMs = tmTotalMs;
+    renderTimerVisual(tmRemainingMs,tmTotalMs);
+    tmStatus.textContent = tmTotalMs > 0 ? "Ready to start" : "Enter a duration above";
+  }
+
+  [tmHr,tmMin,tmSec].forEach((input)=>{
+    input.addEventListener("change",()=>{ if(!tmRunning) syncTimerFromInputs(); });
+  });
+
+  presetChips.forEach((chip)=>{
+    chip.addEventListener("click",()=>{
+      tmRunning = false;
+      tmStartBtn.textContent = "Start";
+      const sec = parseInt(chip.dataset.seconds,10);
+      tmHr.value = Math.floor(sec/3600);
+      tmMin.value = Math.floor((sec%3600)/60);
+      tmSec.value = sec%60;
+      syncTimerFromInputs();
+    });
+  });
+
+  tmStartBtn.addEventListener("click",()=>{
+    if(!tmRunning){
+      if(tmRemainingMs <= 0) syncTimerFromInputs();
+      if(tmRemainingMs <= 0) return;
+      tmRunning = true;
+      tmEndPerf = performance.now() + tmRemainingMs;
+      tmStartBtn.textContent = "Pause";
+      tmStatus.textContent = "Counting down";
+    }else{
+      tmRunning = false;
+      tmRemainingMs = Math.max(0,tmEndPerf - performance.now());
+      tmStartBtn.textContent = "Resume";
+      tmStatus.textContent = "Paused";
+    }
+  });
+
+  tmResetBtn.addEventListener("click",()=>{
+    tmRunning = false;
+    tmStartBtn.textContent = "Start";
+    syncTimerFromInputs();
+  });
+
+  // --- Master animation loop ---
+  renderStopwatchVisual(0);
+  syncTimerFromInputs();
+
+  function masterLoop(nowPerf){
+    updateClock(new Date());
+    if(swRunning){ swElapsedMs = nowPerf - swStartPerf; renderStopwatchVisual(swElapsedMs); }
+    if(tmRunning){
+      const rem = tmEndPerf - nowPerf;
+      if(rem <= 0){
+        tmRunning = false;
+        tmRemainingMs = 0;
+        renderTimerVisual(0,tmTotalMs);
+        tmStatus.textContent = "Time is up";
+        tmStartBtn.textContent = "Start";
+        playChime();
+      }else{
+        tmRemainingMs = rem;
+        renderTimerVisual(rem,tmTotalMs);
+      }
+    }
+    requestAnimationFrame(masterLoop);
+  }
+
+  requestAnimationFrame(masterLoop);
 })();

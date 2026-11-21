@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111312">
 <title>Toolify —  Tool Library</title>
-<link rel="stylesheet" href="styles.css?v=21">
+<link rel="stylesheet" href="styles.css?v=24">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -67,10 +67,10 @@
       </label>
       <div class="mac-menubar-right">
         <button id="mac-signout" type="button" title="Sign out">Sign out</button>
+        <time class="mac-menubar-clock" id="mac-clock"></time>
         <button id="mac-settings" type="button" aria-label="Settings">
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.6"/></svg>
         </button>
-        <time class="mac-menubar-clock" id="mac-clock"></time>
       </div>
     </div>
   </div>
@@ -132,16 +132,16 @@
     <div class="content-scroll">
       <div class="grid" id="tool-grid"></div>
     </div>
-    <aside class="feature-announcement" id="feature-announcement" aria-label="New features" hidden>
-      <button class="feature-announcement-dismiss" id="feature-announcement-dismiss" type="button" aria-label="Dismiss new features">&times;</button>
+    <aside class="feature-announcement" id="feature-announcement" aria-label="What's new announcement" hidden>
+      <button class="feature-announcement-dismiss" id="feature-announcement-dismiss" type="button" aria-label="Dismiss announcement">&times;</button>
       <div class="feature-announcement-copy">
         <span class="feature-announcement-eyebrow">NEW IN TOOLIFY</span>
-        <strong>More ways to make Toolify yours</strong>
-        <span>Now you can change the app's theme and also use the new Music Player.</span>
+        <strong>Task Manager &amp; Clock Suite</strong>
+        <span>Stay on top of your day with the new Task Manager — add, edit, complete and filter tasks in one place. The analog and digital clock, stopwatch and timer are also ready whenever you need them.</span>
       </div>
       <div class="feature-announcement-actions">
-        <button class="feature-action-primary" id="feature-theme-button" type="button">Change theme</button>
-        <button id="feature-music-button" type="button">Open music player</button>
+        <button class="feature-action-primary" id="feature-tasks-button" type="button">Open Tasks</button>
+        <button id="feature-clock-button" type="button">Open Clock</button>
       </div>
     </aside>
   </main>
@@ -157,6 +157,12 @@
       </button>
       <button class="quick-tools-tab" type="button" data-right-panel="notes" data-tooltip="Notes" aria-label="Notes" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="none"><path d="M6 3.5h9l4 4v13H6a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 4v5h5M8 13h8M8 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="quick-tools-tab" type="button" data-right-panel="tasks" data-tooltip="Tasks" aria-label="Tasks" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="4" width="17" height="16" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M7.4 9.2l1.5 1.5 2.7-2.9M13.8 9.7h3.3M7.4 15.2l1.5 1.5 2.7-2.9M13.8 15.7h3.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="quick-tools-tab" type="button" data-right-panel="clock" data-tooltip="Clock" aria-label="Clock" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </nav>
     <div class="quick-tools-panel">
@@ -222,6 +228,188 @@
         <div class="notes-list-wrap">
           <div class="notes-list-title">Saved notes</div>
           <div class="notes-list" id="quick-notes-list"></div>
+        </div>
+      </section>
+      <section class="tasks-panel" id="tasks-panel" aria-label="Tasks" hidden>
+        <div class="tasks-composer">
+          <div class="tasks-panel-heading">
+            <div>
+              <div class="tasks-panel-title">Tasks</div>
+              <div class="tasks-subtitle" id="tasks-progress-label">0 of 0 completed</div>
+            </div>
+            <button class="tasks-mark-all" id="tasks-mark-all" type="button" title="Mark all as done" aria-label="Mark all as done">Mark all</button>
+          </div>
+          <form class="tasks-add-form" id="tasks-add-form" autocomplete="off">
+            <input id="quick-task-input" type="text" maxlength="200" placeholder="Add a new task…" aria-label="New task">
+            <button type="submit" aria-label="Add task" title="Add task">＋</button>
+          </form>
+        </div>
+        <div class="tasks-list-wrap">
+          <div class="tasks-toolbar">
+            <div class="tasks-filters" role="group" aria-label="Filter tasks">
+              <button class="tasks-filter active" type="button" data-task-filter="all" aria-pressed="true">All</button>
+              <button class="tasks-filter" type="button" data-task-filter="active" aria-pressed="false">Active</button>
+              <button class="tasks-filter" type="button" data-task-filter="done" aria-pressed="false">Done</button>
+            </div>
+            <button class="tasks-clear-done" id="tasks-clear-done" type="button" title="Clear completed tasks">Clear done</button>
+          </div>
+          <div class="tasks-progress" aria-hidden="true"><span id="tasks-progress-bar"></span></div>
+          <div class="tasks-list" id="quick-tasks-list" aria-label="Task list"></div>
+          <div class="tasks-remaining" id="tasks-remaining" aria-live="polite">0 tasks left</div>
+        </div>
+      </section>
+      <section class="clock-panel" id="clock-panel" aria-label="Clock" hidden>
+        <div class="clock-widget" id="clock-widget">
+          <header class="clock-widget-header">
+            <div class="clock-brand-group">
+              <span class="clock-brand-ring" aria-hidden="true"></span>
+              <div>
+                <h2 class="clock-widget-title">Toolify Horology</h2>
+                <div class="clock-widget-subtitle">Analog &amp; Digital</div>
+              </div>
+            </div>
+            <div class="clock-theme-picker">
+              <button type="button" class="clock-theme-toggle" id="clock-theme-toggle" title="Clock themes" aria-label="Clock themes" aria-haspopup="true" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
+              </button>
+              <div class="clock-theme-menu" id="clock-theme-menu" role="menu" aria-label="Dial color theme" hidden>
+                <button type="button" class="clock-theme-option" role="menuitemradio" aria-checked="false" data-set="minimal"><span class="clock-theme-dot" style="--dot:#a9b0aa"></span><span class="clock-theme-name">Minimal</span><span class="clock-theme-check">✓</span></button>
+                <button type="button" class="clock-theme-option active" role="menuitemradio" aria-checked="true" data-set="emerald"><span class="clock-theme-dot" style="--dot:#22b876"></span><span class="clock-theme-name">Emerald</span><span class="clock-theme-check">✓</span></button>
+                <button type="button" class="clock-theme-option" role="menuitemradio" aria-checked="false" data-set="forest"><span class="clock-theme-dot" style="--dot:#3a7d5c"></span><span class="clock-theme-name">Forest</span><span class="clock-theme-check">✓</span></button>
+                <button type="button" class="clock-theme-option" role="menuitemradio" aria-checked="false" data-set="olive"><span class="clock-theme-dot" style="--dot:#6b8e23"></span><span class="clock-theme-name">Olive</span><span class="clock-theme-check">✓</span></button>
+                <button type="button" class="clock-theme-option" role="menuitemradio" aria-checked="false" data-set="midnight"><span class="clock-theme-dot" style="--dot:#60a5fa"></span><span class="clock-theme-name">Midnight</span><span class="clock-theme-check">✓</span></button>
+                <button type="button" class="clock-theme-option" role="menuitemradio" aria-checked="false" data-set="rose"><span class="clock-theme-dot" style="--dot:#f472b6"></span><span class="clock-theme-name">Rose</span><span class="clock-theme-check">✓</span></button>
+              </div>
+            </div>
+          </header>
+
+          <nav class="clock-nav-tabs" role="tablist" aria-label="Modes">
+            <button type="button" class="clock-nav-tab active" data-tab="clock" role="tab" aria-selected="true">Clock</button>
+            <button type="button" class="clock-nav-tab" data-tab="stopwatch" role="tab" aria-selected="false">Stopwatch</button>
+            <button type="button" class="clock-nav-tab" data-tab="timer" role="tab" aria-selected="false">Timer</button>
+          </nav>
+
+          <!-- 1. CLOCK TAB (ANALOG + DIGITAL) -->
+          <div class="clock-tab-panel active" id="clock-tab-clock" role="tabpanel">
+            <div class="clock-toolbar-row">
+              <select class="clock-select-input" id="clock-tz-select" aria-label="Timezone">
+                <option value="local" selected>Local Time</option>
+                <option value="Asia/Karachi">Islamabad / Karachi (PKT)</option>
+                <option value="Asia/Dubai">Dubai (GST)</option>
+                <option value="Europe/London">London (GMT/BST)</option>
+                <option value="America/New_York">New York (EST/EDT)</option>
+                <option value="Asia/Tokyo">Tokyo (JST)</option>
+                <option value="UTC">UTC</option>
+              </select>
+              <button type="button" class="clock-mini-btn" id="clock-hour-format-btn" aria-pressed="false">12H</button>
+            </div>
+
+            <div class="clock-dial-stage">
+              <div class="clock-analog-dial" data-dial="clock" aria-label="Analog clock">
+                <div class="clock-ticks"></div>
+                <div class="clock-numerals"></div>
+                <div class="clock-date-window" id="clock-dial-date">21</div>
+                <span class="clock-dial-brand">TOOLIFY</span>
+                <span class="clock-dial-sub" id="clock-dial-meridiem">PM</span>
+                <div class="clock-hand hour" id="clock-hour-hand"></div>
+                <div class="clock-hand minute" id="clock-minute-hand"></div>
+                <div class="clock-hand second" id="clock-second-hand"></div>
+                <div class="clock-center-cap"></div>
+              </div>
+            </div>
+
+            <div class="clock-digital-strip">
+              <div>
+                <span class="clock-digital-time" id="clock-digital-clock">00:00:00</span>
+                <span class="clock-digital-ampm" id="clock-digital-ampm">AM</span>
+              </div>
+              <div class="clock-digital-meta" id="clock-digital-date">Sat, Nov 21</div>
+            </div>
+          </div>
+
+          <!-- 2. STOPWATCH TAB (ANALOG CHRONOGRAPH + DIGITAL) -->
+          <div class="clock-tab-panel" id="clock-tab-stopwatch" role="tabpanel">
+            <div class="clock-dial-stage">
+              <div class="clock-analog-dial" data-dial="stopwatch" aria-label="Analog stopwatch dial">
+                <div class="clock-ticks"></div>
+                <div class="clock-numerals"></div>
+                <div class="clock-subdial" aria-hidden="true">
+                  <div class="clock-subdial-hand" id="clock-sw-sub-hand"></div>
+                  <div class="clock-subdial-cap"></div>
+                  <span class="clock-subdial-label">MIN</span>
+                </div>
+                <span class="clock-dial-brand">CHRONO</span>
+                <span class="clock-dial-sub" id="clock-sw-dial-state">READY</span>
+                <div class="clock-hand chrono-sec" id="clock-sw-sec-hand"></div>
+                <div class="clock-center-cap"></div>
+              </div>
+            </div>
+
+            <div class="clock-digital-strip centered">
+              <div>
+                <span class="clock-digital-time large" id="clock-sw-main">00:00.0</span>
+                <span class="clock-digital-ms" id="clock-sw-cs">0</span>
+              </div>
+              <div class="clock-status-text" id="clock-sw-status">Ready</div>
+            </div>
+
+            <div class="clock-action-row">
+              <button type="button" class="clock-btn primary" id="clock-sw-start-btn">Start</button>
+              <button type="button" class="clock-btn warm" id="clock-sw-lap-btn" disabled>Lap</button>
+              <button type="button" class="clock-btn" id="clock-sw-reset-btn">Reset</button>
+            </div>
+
+            <div class="clock-laps-box" id="clock-sw-laps">
+              <div class="clock-laps-empty">No laps recorded yet</div>
+            </div>
+          </div>
+
+          <!-- 3. TIMER TAB (ANALOG PROGRESS DIAL + DIGITAL) -->
+          <div class="clock-tab-panel" id="clock-tab-timer" role="tabpanel">
+            <div class="clock-presets-row">
+              <button type="button" class="clock-preset-chip" data-seconds="60">1m</button>
+              <button type="button" class="clock-preset-chip" data-seconds="300">5m</button>
+              <button type="button" class="clock-preset-chip" data-seconds="900">15m</button>
+              <button type="button" class="clock-preset-chip" data-seconds="1500">25m</button>
+            </div>
+
+            <div class="clock-custom-time-row">
+              <div class="clock-field-wrap">
+                <label class="clock-field-label" for="clock-tm-hr">Hours</label>
+                <input type="number" class="clock-number-input" id="clock-tm-hr" min="0" max="23" value="0">
+              </div>
+              <div class="clock-field-wrap">
+                <label class="clock-field-label" for="clock-tm-min">Minutes</label>
+                <input type="number" class="clock-number-input" id="clock-tm-min" min="0" max="59" value="5">
+              </div>
+              <div class="clock-field-wrap">
+                <label class="clock-field-label" for="clock-tm-sec">Seconds</label>
+                <input type="number" class="clock-number-input" id="clock-tm-sec" min="0" max="59" value="0">
+              </div>
+            </div>
+
+            <div class="clock-dial-stage">
+              <div class="clock-analog-dial" data-dial="timer" aria-label="Analog countdown dial">
+                <div class="clock-timer-ring" id="clock-tm-ring"></div>
+                <div class="clock-ticks"></div>
+                <div class="clock-numerals"></div>
+                <span class="clock-dial-brand">COUNTDOWN</span>
+                <span class="clock-dial-sub" id="clock-tm-dial-state">05:00</span>
+                <div class="clock-hand timer-sec" id="clock-tm-sec-hand"></div>
+                <div class="clock-center-cap"></div>
+              </div>
+            </div>
+
+            <div class="clock-digital-strip centered">
+              <div class="clock-digital-time large" id="clock-tm-display">05:00</div>
+              <div class="clock-status-text" id="clock-tm-status">Set duration or pick a preset</div>
+            </div>
+
+            <div class="clock-action-row two-col">
+              <button type="button" class="clock-btn primary" id="clock-tm-start-btn">Start</button>
+              <button type="button" class="clock-btn" id="clock-tm-reset-btn">Reset</button>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -384,6 +572,6 @@
 <input type="file" id="import-file-input" accept="application/json" style="display:none;">
 <div id="toast-stack" aria-live="polite"></div>
 
-<script src="app.js?v=20"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>
