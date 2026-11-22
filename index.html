@@ -8,8 +8,10 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111312">
 <title>Toolify —  Tool Library</title>
-<link rel="stylesheet" href="styles.css?v=24">
+<link rel="stylesheet" href="styles.css?v=27">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
 </head>
 <body>
 
@@ -160,6 +162,9 @@
       </button>
       <button class="quick-tools-tab" type="button" data-right-panel="tasks" data-tooltip="Tasks" aria-label="Tasks" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="4" width="17" height="16" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M7.4 9.2l1.5 1.5 2.7-2.9M13.8 9.7h3.3M7.4 15.2l1.5 1.5 2.7-2.9M13.8 15.7h3.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="quick-tools-tab" type="button" data-right-panel="books" data-tooltip="Books" aria-label="Books" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 6.5c-1.8-1.3-4-1.8-7-1.7v13c3-.1 5.2.4 7 1.7 1.8-1.3 4-1.8 7-1.7v-13c-3-.1-5.2.4-7 1.7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 6.5v13" stroke="currentColor" stroke-width="1.7"/></svg>
       </button>
       <button class="quick-tools-tab" type="button" data-right-panel="clock" data-tooltip="Clock" aria-label="Clock" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -412,6 +417,16 @@
           </div>
         </div>
       </section>
+      <section class="books-panel" id="books-panel" aria-label="PDF books" hidden>
+        <button class="books-add-btn" id="books-add-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>Add PDF</span>
+        </button>
+        <input id="book-file-input" type="file" accept="application/pdf" hidden>
+        <div class="books-heading-row"><span>Your books</span><span id="books-count">0</span></div>
+        <div class="books-status" id="books-status" role="status" aria-live="polite"></div>
+        <div class="books-list" id="books-list"></div>
+      </section>
     </div>
   </aside>
 </div>
@@ -569,9 +584,73 @@
   </div>
 </div>
 
+<!-- ============ PDF BOOK READER ============ -->
+<div class="overlay book-reader-overlay" id="book-overlay">
+  <div class="book-reader" role="dialog" aria-modal="true" aria-label="PDF book reader">
+    <header class="book-reader-header">
+      <div class="book-reader-heading">
+        <div class="book-reader-title" id="book-reader-title">Your book</div>
+        <div class="book-reader-subtitle" id="book-reader-subtitle">3D flipbook</div>
+      </div>
+      <div class="book-reader-actions">
+        <div class="book-zoom-group" role="group" aria-label="Zoom controls">
+          <button class="book-reader-icon-btn" id="book-zoom-out" type="button" title="Zoom out" aria-label="Zoom out">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+          <span class="book-zoom-label" id="book-zoom-label">100%</span>
+          <button class="book-reader-icon-btn" id="book-zoom-in" type="button" title="Zoom in" aria-label="Zoom in">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <button class="book-reader-icon-btn" id="book-fullscreen-btn" type="button" title="Fullscreen" aria-label="Fullscreen">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="modal-close" id="book-close" type="button" aria-label="Close book"><svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      </div>
+    </header>
+    <div class="book-reader-body">
+      <div class="book-stage" id="book-stage">
+        <div class="book-loading" id="book-loading">Preparing your book…</div>
+        <div class="book-zoom-viewport" id="book-zoom-viewport">
+          <div id="book"></div>
+        </div>
+      </div>
+    </div>
+    <footer class="book-reader-footer">
+      <div class="book-progress"><span id="book-progress-bar"></span></div>
+      <div class="book-controls">
+        <button type="button" id="book-prev">&lsaquo; Previous</button>
+        <label class="book-page-jump" for="book-page-input">
+          <span>Page</span>
+          <input type="number" id="book-page-input" min="1" step="1" inputmode="numeric" aria-label="Jump to page" value="1">
+          <span class="book-page-total" id="book-page-total">/ 0</span>
+        </label>
+        <button type="button" id="book-next">Next &rsaquo;</button>
+        <button type="button" class="book-fullscreen-footer" id="book-fullscreen-footer" title="Fullscreen" aria-label="Fullscreen">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </footer>
+  </div>
+</div>
+
 <input type="file" id="import-file-input" accept="application/json" style="display:none;">
 <div id="toast-stack" aria-live="polite"></div>
 
-<script src="app.js?v=25"></script>
+<script src="js/config.js?v=30"></script>
+<script src="js/supabase.js?v=30"></script>
+<script src="js/store.js?v=30"></script>
+<script src="js/music.js?v=30"></script>
+<script src="js/db.js?v=30"></script>
+<script src="js/ui.js?v=30"></script>
+<script src="js/tools.js?v=30"></script>
+<script src="js/workspace.js?v=30"></script>
+<script src="js/data.js?v=30"></script>
+<script src="js/settings.js?v=30"></script>
+<script src="js/books.js?v=30"></script>
+<script src="js/events.js?v=30"></script>
+<script src="js/auth.js?v=30"></script>
+<script src="js/clock.js?v=30"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>
