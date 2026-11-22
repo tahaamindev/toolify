@@ -1,19 +1,24 @@
 /* ============================================================
    TOOLIFY — PDF Books (device-only 3D flipbook library)
    Books live only in this device's IndexedDB store. No cloud
-   sync, no upload size limit. Rendered pages are cached on this
-   device, so a PDF is rendered only the very first time it opens.
+   sync and no upload size limit. Pages are rendered lazily into
+   high-resolution canvases, so a book opens immediately instead
+   of waiting for every page to be converted first.
    ============================================================ */
 
-const BOOK_RENDER_SCALE = 3;
-const BOOK_RENDER_QUALITY = 0.95;
+const BOOK_PAGE_WIDTH = 600;
+const BOOK_PAGE_HEIGHT = 800;
+const BOOK_RENDER_RATIO = 2;
+
 let bookItems = [];
 let bookFlip = null;
 let bookTotalPages = 0;
 let bookZoom = 1;
-let bookBaseWidth = 450;
-let bookBaseHeight = 600;
-const bookImageCache = new Map();
+let pdfDoc = null;
+let currentBook = null;
+let bookRenderToken = 0;
+const bookRenderedPages = new Set();
+const bookRenderingPages = new Set();
 
 function booksStatus(message, isError = false){
   const el = document.getElementById('books-status');
@@ -41,7 +46,7 @@ function resetBookPageUI(){
   const input = document.getElementById('book-page-input');
   const total = document.getElementById('book-page-total');
   const bar = document.getElementById('book-progress-bar');
-  if(input) input.value = '1';
+  if(input){ input.value = '1'; input.max = '1'; }
   if(total) total.textContent = '/ 0';
   if(bar) bar.style.width = '0%';
 }
@@ -99,7 +104,7 @@ async function handleBookUpload(file){
       blob: new Blob([buffer], {type: 'application/pdf'})
     };
     await DB.putBook(record);
-    bookImageCache.delete(record.id);
+    // Purge any old full-document cache so the new lazy renderer is used.
     await DB.delBookPages(record.id).catch(() => {});
     bookItems.unshift(record);
     renderBooks();
@@ -115,8 +120,8 @@ async function handleBookUpload(file){
 async function removeBook(id){
   const book = bookItems.find(b => b.id === id);
   if(!book) return;
+  if(currentBook?.id === id) closeBookReader();
   bookItems = bookItems.filter(b => b.id !== id);
-  bookImageCache.delete(id);
   renderBooks();
   try{
     await DB.delBook(id);
@@ -142,13 +147,14 @@ function confirmRemoveBook(id){
 }
 
 function ensureBookElement(){
-  const viewport = document.getElementById('book-zoom-viewport');
-  if(!viewport) return null;
+  const stage = document.getElementById('book-stage');
+  if(!stage) return null;
   let element = document.getElementById('book');
   if(!element){
+    // PageFlip.destroy() removes its container, so recreate it when needed.
     element = document.createElement('div');
     element.id = 'book';
-    viewport.appendChild(element);
+    stage.appendChild(element);
   }
   return element;
 }
@@ -172,165 +178,153 @@ function jumpToBookPage(rawValue){
   if(!Number.isFinite(page)) page = 1;
   page = Math.max(1, Math.min(bookTotalPages || 1, page));
   if(input) input.value = String(page);
-  try{ bookFlip.flip(page - 1); }catch(error){ console.warn(error); }
-}
-
-function sizeZoomViewport(){
-  const viewport = document.getElementById('book-zoom-viewport');
-  if(!viewport) return;
-  // PageFlip draws two pages side by side, so the canvas needs double page width.
-  viewport.style.width = Math.round(bookBaseWidth * 2 * bookZoom) + 'px';
-  viewport.style.height = Math.round(bookBaseHeight * bookZoom) + 'px';
+  try{ bookFlip.turnToPage(page - 1); }catch(error){ console.warn(error); }
+  preloadBookPages(page);
 }
 
 function applyBookZoom(){
-  const viewport = document.getElementById('book-zoom-viewport');
   const stageBook = document.getElementById('book');
   const label = document.getElementById('book-zoom-label');
-  if(!viewport || !stageBook) return;
-  if(bookZoom === 1){
-    stageBook.style.transformOrigin = '';
-    stageBook.style.transform = '';
-  }else{
-    stageBook.style.transformOrigin = 'top left';
-    stageBook.style.transform = 'scale(' + bookZoom + ')';
-  }
-  sizeZoomViewport();
+  if(stageBook) stageBook.style.transform = bookZoom === 1 ? '' : `scale(${bookZoom})`;
   if(label) label.textContent = Math.round(bookZoom * 100) + '%';
   const out = document.getElementById('book-zoom-out');
   const into = document.getElementById('book-zoom-in');
-  if(out) out.disabled = bookZoom <= 0.5;
-  if(into) into.disabled = bookZoom >= 2;
+  if(out) out.disabled = bookZoom <= 0.6;
+  if(into) into.disabled = bookZoom >= 1.8;
 }
 
 function changeBookZoom(delta){
-  bookZoom = Math.max(0.5, Math.min(2, Math.round((bookZoom + delta) * 10) / 10));
+  bookZoom = Math.max(0.6, Math.min(1.8, Math.round((bookZoom + delta) * 10) / 10));
   applyBookZoom();
 }
 
-function calculateBookSize(){
-  const stage = document.getElementById('book-stage');
-  const isMobile = window.innerWidth < 700;
-  const availW = Math.max(240, (stage?.clientWidth || 700) - 36);
-  const availH = Math.max(320, (stage?.clientHeight || 600) - 36);
-  const ratio = 0.75;
-  const maxW = isMobile ? 320 : 440;
-  const maxH = isMobile ? 440 : 590;
-  let w = Math.min(maxW, isMobile ? availW * 0.92 : availW / 2, availH * ratio);
-  let h = w / ratio;
-  if(h > maxH){ h = maxH; w = h * ratio; }
-  bookBaseWidth = Math.round(w);
-  bookBaseHeight = Math.round(h);
+function createBookPage(number){
+  const div = document.createElement('div');
+  div.className = 'page';
+  div.dataset.page = number;
+  const canvas = document.createElement('canvas');
+  div.appendChild(canvas);
+  return div;
 }
 
-function createBookFlip(images){
-  calculateBookSize();
-  const stageBook = ensureBookElement();
-  if(stageBook){
-    stageBook.style.cssText = '';
-    // PageFlip's canvas is 100% of this element — it must have a real size.
-    stageBook.style.width = (bookBaseWidth * 2) + 'px';
-    stageBook.style.height = bookBaseHeight + 'px';
+async function renderBookPage(number){
+  if(!pdfDoc || number < 1 || number > bookTotalPages) return;
+  if(bookRenderedPages.has(number) || bookRenderingPages.has(number)) return;
+  bookRenderingPages.add(number);
+  const myToken = bookRenderToken;
+  try{
+    const page = await pdfDoc.getPage(number);
+    if(myToken !== bookRenderToken) return;
+    const original = page.getViewport({scale: 1});
+    const scale = Math.min(BOOK_PAGE_WIDTH / original.width, BOOK_PAGE_HEIGHT / original.height);
+    const viewport = page.getViewport({scale});
+    const canvas = document.querySelector(`#book [data-page="${number}"] canvas`);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = Math.round(viewport.width * BOOK_RENDER_RATIO);
+    canvas.height = Math.round(viewport.height * BOOK_RENDER_RATIO);
+    await page.render({
+      canvasContext: ctx,
+      viewport: page.getViewport({scale: scale * BOOK_RENDER_RATIO})
+    }).promise;
+    if(myToken === bookRenderToken) bookRenderedPages.add(number);
+  }catch(error){
+    console.warn('Book page render error:', number, error);
+  }finally{
+    bookRenderingPages.delete(number);
   }
-  sizeZoomViewport();
+}
+
+function preloadBookPages(center){
+  [center - 1, center, center + 1, center + 2].forEach(page => {
+    if(page >= 1 && page <= bookTotalPages) renderBookPage(page);
+  });
+}
+
+function createBookFlip(){
+  const stageBook = ensureBookElement();
+  if(!stageBook) return;
+  stageBook.classList.remove('ready');
+  stageBook.style.transform = '';
   bookFlip = new St.PageFlip(stageBook, {
-    width: bookBaseWidth,
-    height: bookBaseHeight,
+    width: BOOK_PAGE_WIDTH,
+    height: BOOK_PAGE_HEIGHT,
     size: 'stretch',
-    minWidth: 240,
-    maxWidth: 1200,
-    minHeight: 300,
-    maxHeight: 1400,
-    maxShadowOpacity: 0.6,
-    showCover: true,
-    mobileScrollSupport: true,
-    usePortrait: true,
-    startPage: 0,
+    minWidth: 250,
+    maxWidth: 1000,
+    minHeight: 350,
+    maxHeight: 800,
     drawShadow: true,
     flippingTime: 700,
-    autoSize: false,
-    clickEventForward: true,
-    useMouseEvents: true,
-    swipeDistance: 30,
-    showPageCorners: true
+    usePortrait: false,
+    startPage: 0,
+    autoSize: true,
+    maxShadowOpacity: 0.5,
+    showCover: false,
+    mobileScrollSupport: false
   });
-  bookFlip.loadFromImages(images);
-  bookFlip.on('flip', updateBookPageInfo);
-  bookTotalPages = images.length;
+  const pages = [];
+  for(let i = 1; i <= bookTotalPages; i++) pages.push(createBookPage(i));
+  bookFlip.loadFromHTML(pages);
+  bookFlip.on('flip', (e) => {
+    updateBookPageInfo();
+    preloadBookPages(e.data + 1);
+  });
+  stageBook.classList.add('ready');
   updateBookPageInfo();
   applyBookZoom();
-}
-
-async function renderBookPages(book){
-  const bar = document.getElementById('book-progress-bar');
-  setBookLoading('Rendering pages at full quality…');
-  const pdf = await pdfjsLib.getDocument({data: new Uint8Array(await book.blob.arrayBuffer()), isEvalSupported: false}).promise;
-  const total = pdf.numPages;
-  const images = [];
-  for(let pageNumber = 1; pageNumber <= total; pageNumber++){
-    const page = await pdf.getPage(pageNumber);
-    const viewport = page.getViewport({scale: BOOK_RENDER_SCALE});
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.ceil(viewport.width);
-    canvas.height = Math.ceil(viewport.height);
-    await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
-    images.push(canvas.toDataURL('image/jpeg', BOOK_RENDER_QUALITY));
-    page.cleanup();
-    if(bar) bar.style.width = ((pageNumber / total) * 100) + '%';
-  }
-  const rendered = {pageCount: total, images};
-  bookImageCache.set(book.id, rendered);
-  // Persist once so a reload never re-renders the same PDF again.
-  await DB.putBookPages({
-    id: book.id, name: book.name, size: book.size, pageCount: total,
-    images, scale: BOOK_RENDER_SCALE, createdAt: new Date().toISOString()
-  }).catch(error => console.warn('Book page cache not saved:', error));
-  if(book.pageCount !== total){
-    book.pageCount = total;
-    await DB.putBook(book).catch(() => {});
-    renderBooks();
-  }
-  return rendered;
 }
 
 async function openBook(id){
   const book = bookItems.find(b => b.id === id);
   if(!book) return;
-  const overlay = document.getElementById('book-overlay');
-  if(!overlay) return;
+  const reader = document.getElementById('book-reader');
+  if(!reader) return;
+
+  const myToken = ++bookRenderToken;
+  currentBook = book;
+  reader.hidden = false;
   document.getElementById('book-reader-title').textContent = book.name;
-  document.getElementById('book-reader-subtitle').textContent = bookFormatSize(book.size) + ' · 3D flipbook';
-  overlay.classList.add('open');
-  // PageFlip.destroy() removes its container, so recreate #book before each open.
+  document.getElementById('book-reader-subtitle').textContent = bookFormatSize(book.size) + ' · lazy high-quality flipbook';
+
   if(bookFlip){ try{ bookFlip.destroy(); }catch(error){} bookFlip = null; }
   const stage = ensureBookElement();
   if(!stage) return;
+  stage.classList.remove('ready');
   stage.innerHTML = '';
+  stage.style.transform = '';
+  pdfDoc = null;
   bookTotalPages = 0;
+  bookZoom = 1;
+  bookRenderedPages.clear();
+  bookRenderingPages.clear();
   resetBookPageUI();
+  applyBookZoom();
   setBookLoading('Opening your book…');
+
   try{
     if(!window.pdfjsLib || !window.St || !window.St.PageFlip){
       throw new Error('Flipbook libraries could not load. Check your connection and refresh.');
     }
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    let rendered = bookImageCache.get(book.id);
-    if(!rendered){
-      const saved = await DB.getBookPages(book.id).catch(() => null);
-      if(saved && saved.size === book.size && saved.name === book.name && Array.isArray(saved.images) && saved.images.length){
-        rendered = {pageCount: saved.pageCount || saved.images.length, images: saved.images};
-        bookImageCache.set(book.id, rendered);
-      }
-    }
-    if(!rendered){
-      rendered = await renderBookPages(book);
-    }else{
-      const bar = document.getElementById('book-progress-bar');
-      if(bar) bar.style.width = '100%';
-    }
-    createBookFlip(rendered.images);
+    const buffer = await book.blob.arrayBuffer();
+    if(myToken !== bookRenderToken) return;
+    pdfDoc = await pdfjsLib.getDocument({data: new Uint8Array(buffer), isEvalSupported: false}).promise;
+    if(myToken !== bookRenderToken) return;
+    bookTotalPages = pdfDoc.numPages;
+    const totalEl = document.getElementById('book-page-total');
+    if(totalEl) totalEl.textContent = '/ ' + bookTotalPages;
+    const pageInput = document.getElementById('book-page-input');
+    if(pageInput) pageInput.max = String(bookTotalPages);
+
+    createBookFlip();
     setBookLoading('', false);
+    setControls(true);
+    updateBookPageInfo();
+    preloadBookPages(1);
+    reader.scrollIntoView({behavior: 'smooth', block: 'start'});
   }catch(error){
+    if(myToken !== bookRenderToken) return;
     console.error(error);
     setBookLoading(error?.message || 'Could not open this PDF.');
     booksStatus('Could not open ' + book.name + '.', true);
@@ -338,17 +332,37 @@ async function openBook(id){
 }
 
 function closeBookReader(){
-  const overlay = document.getElementById('book-overlay');
-  if(!overlay) return;
-  overlay.classList.remove('open');
+  const reader = document.getElementById('book-reader');
+  bookRenderToken++;
   if(bookFlip){ try{ bookFlip.destroy(); }catch(error){} bookFlip = null; }
+  pdfDoc = null;
+  currentBook = null;
+  bookTotalPages = 0;
+  bookRenderedPages.clear();
+  bookRenderingPages.clear();
   const stage = document.getElementById('book');
-  if(stage) stage.innerHTML = '';
+  if(stage){ stage.classList.remove('ready'); stage.innerHTML = ''; }
+  if(reader) reader.hidden = true;
+  resetBookPageUI();
+  setBookLoading('', false);
+  setControls(false);
   if(document.fullscreenElement) document.exitFullscreen().catch(() => {});
 }
 
+function setControls(enabled){
+  [
+    'firstBtn', 'prevBtn', 'nextBtn', 'lastBtn',
+    'book-prev', 'book-next', 'book-zoom-in', 'book-zoom-out'
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.disabled = !enabled;
+  });
+  const input = document.getElementById('book-page-input');
+  if(input) input.disabled = !enabled;
+}
+
 function toggleBookFullscreen(){
-  const reader = document.querySelector('.book-reader');
+  const reader = document.getElementById('book-reader');
   if(!reader) return;
   if(!document.fullscreenElement){
     reader.requestFullscreen?.().catch(() => {});
@@ -356,6 +370,38 @@ function toggleBookFullscreen(){
     document.exitFullscreen().catch(() => {});
   }
 }
+
+/* In fullscreen the PDF fills the page; chrome is revealed only when the
+   cursor moves to the top (header) or bottom (footer) edge. */
+let bookChromeTimer = null;
+function showBookChrome(){
+  const reader = document.getElementById('book-reader');
+  if(!reader || !document.fullscreenElement) return;
+  reader.classList.add('chrome-visible');
+  clearTimeout(bookChromeTimer);
+  bookChromeTimer = setTimeout(() => reader.classList.remove('chrome-visible'), 2200);
+}
+
+document.getElementById('book-reader')?.addEventListener('mousemove', (event) => {
+  if(!document.fullscreenElement) return;
+  const rect = event.currentTarget.getBoundingClientRect();
+  const nearTop = event.clientY - rect.top <= 90;
+  const nearBottom = rect.bottom - event.clientY <= 80;
+  if(nearTop || nearBottom) showBookChrome();
+  else{
+    const reader = event.currentTarget;
+    reader.classList.remove('chrome-visible');
+    clearTimeout(bookChromeTimer);
+  }
+});
+
+document.addEventListener('fullscreenchange', () => {
+  const reader = document.getElementById('book-reader');
+  if(!reader) return;
+  clearTimeout(bookChromeTimer);
+  if(document.fullscreenElement === reader) showBookChrome();
+  else reader.classList.remove('chrome-visible');
+});
 
 document.getElementById('books-add-btn')?.addEventListener('click', () => {
   document.getElementById('book-file-input')?.click();
@@ -365,6 +411,7 @@ document.getElementById('book-file-input')?.addEventListener('change', async (ev
   await handleBookUpload(event.target.files[0]);
   event.target.value = '';
 });
+
 const booksListEl = document.getElementById('books-list');
 booksListEl?.addEventListener('click', (event) => {
   const removeButton = event.target.closest('[data-book-delete]');
@@ -377,6 +424,7 @@ booksListEl?.addEventListener('keydown', (event) => {
   const item = event.target.closest('[data-book-id]');
   if(item){ event.preventDefault(); openBook(item.dataset.bookId); }
 });
+
 document.getElementById('book-close')?.addEventListener('click', closeBookReader);
 document.getElementById('book-prev')?.addEventListener('click', () => bookFlip?.flipPrev());
 document.getElementById('book-next')?.addEventListener('click', () => bookFlip?.flipNext());
@@ -384,22 +432,30 @@ document.getElementById('book-fullscreen-btn')?.addEventListener('click', toggle
 document.getElementById('book-fullscreen-footer')?.addEventListener('click', toggleBookFullscreen);
 document.getElementById('book-zoom-in')?.addEventListener('click', () => changeBookZoom(0.1));
 document.getElementById('book-zoom-out')?.addEventListener('click', () => changeBookZoom(-0.1));
+
 const bookPageInput = document.getElementById('book-page-input');
 bookPageInput?.addEventListener('change', () => jumpToBookPage(bookPageInput.value));
 bookPageInput?.addEventListener('keydown', (event) => {
   if(event.key === 'Enter'){ event.preventDefault(); jumpToBookPage(bookPageInput.value); bookPageInput.blur(); }
 });
-document.getElementById('book-overlay')?.addEventListener('click', (event) => {
-  if(event.target.id === 'book-overlay') closeBookReader();
-});
+
 document.addEventListener('keydown', (event) => {
-  if(!document.getElementById('book-overlay')?.classList.contains('open')) return;
+  const reader = document.getElementById('book-reader');
+  if(!reader || reader.hidden) return;
   if(event.target === bookPageInput) return;
-  if(event.key === 'Escape'){ closeBookReader(); }
-  else if(event.key === 'ArrowRight'){ event.preventDefault(); bookFlip?.flipNext(); }
-  else if(event.key === 'ArrowLeft'){ event.preventDefault(); bookFlip?.flipPrev(); }
-  else if((event.ctrlKey || event.metaKey) && (event.key === '+' || event.key === '=')){ event.preventDefault(); changeBookZoom(0.1); }
-  else if((event.ctrlKey || event.metaKey) && event.key === '-'){ event.preventDefault(); changeBookZoom(-0.1); }
+  if(event.key === 'Escape'){
+    if(document.fullscreenElement){ document.exitFullscreen().catch(() => {}); }
+    else closeBookReader();
+  }else if(event.key === 'ArrowRight'){
+    event.preventDefault(); bookFlip?.flipNext();
+  }else if(event.key === 'ArrowLeft'){
+    event.preventDefault(); bookFlip?.flipPrev();
+  }else if((event.ctrlKey || event.metaKey) && (event.key === '+' || event.key === '=')){
+    event.preventDefault(); changeBookZoom(0.1);
+  }else if((event.ctrlKey || event.metaKey) && event.key === '-'){
+    event.preventDefault(); changeBookZoom(-0.1);
+  }
 });
 
+setControls(false);
 loadBooks();

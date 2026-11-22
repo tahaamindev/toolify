@@ -132,6 +132,53 @@
       </div>
     </div>
     <div class="content-scroll">
+
+      <!-- ============ INLINE PDF BOOK READER ============ -->
+      <section class="book-reader" id="book-reader" role="region" aria-label="PDF book reader" hidden>
+        <header class="book-reader-header">
+          <div class="book-reader-heading">
+            <div class="book-reader-title" id="book-reader-title">Your book</div>
+            <div class="book-reader-subtitle" id="book-reader-subtitle">3D flipbook</div>
+          </div>
+          <div class="book-reader-actions">
+            <div class="book-zoom-group" role="group" aria-label="Zoom controls">
+              <button class="book-reader-icon-btn" id="book-zoom-out" type="button" title="Zoom out" aria-label="Zoom out">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </button>
+              <span class="book-zoom-label" id="book-zoom-label">100%</span>
+              <button class="book-reader-icon-btn" id="book-zoom-in" type="button" title="Zoom in" aria-label="Zoom in">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <button class="book-reader-icon-btn" id="book-fullscreen-btn" type="button" title="Fullscreen" aria-label="Fullscreen">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="modal-close" id="book-close" type="button" aria-label="Close book"><svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+          </div>
+        </header>
+        <div class="book-reader-body">
+          <div class="book-stage" id="book-stage">
+            <div class="book-loading" id="book-loading">Preparing your book…</div>
+            <div id="book"></div>
+          </div>
+        </div>
+        <footer class="book-reader-footer">
+          <div class="book-progress"><span id="book-progress-bar"></span></div>
+          <div class="book-controls">
+            <button type="button" id="book-prev">&lsaquo; Previous</button>
+            <label class="book-page-jump" for="book-page-input">
+              <span>Page</span>
+              <input type="number" id="book-page-input" min="1" step="1" inputmode="numeric" aria-label="Jump to page" value="1">
+              <span class="book-page-total" id="book-page-total">/ 0</span>
+            </label>
+            <button type="button" id="book-next">Next &rsaquo;</button>
+            <button type="button" class="book-fullscreen-footer" id="book-fullscreen-footer" title="Fullscreen" aria-label="Fullscreen">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </footer>
+      </section>
+
       <div class="grid" id="tool-grid"></div>
     </div>
     <aside class="feature-announcement" id="feature-announcement" aria-label="What's new announcement" hidden>
@@ -284,6 +331,7 @@
                 <button type="button" class="clock-theme-option" role="menuitemradio" aria-checked="false" data-set="olive"><span class="clock-theme-dot" style="--dot:#6b8e23"></span><span class="clock-theme-name">Olive</span><span class="clock-theme-check">✓</span></button>
                 <button type="button" class="clock-theme-option" role="menuitemradio" aria-checked="false" data-set="midnight"><span class="clock-theme-dot" style="--dot:#60a5fa"></span><span class="clock-theme-name">Midnight</span><span class="clock-theme-check">✓</span></button>
                 <button type="button" class="clock-theme-option" role="menuitemradio" aria-checked="false" data-set="rose"><span class="clock-theme-dot" style="--dot:#f472b6"></span><span class="clock-theme-name">Rose</span><span class="clock-theme-check">✓</span></button>
+                <button type="button" class="clock-theme-option" role="menuitemradio" aria-checked="false" data-set="orbita"><span class="clock-theme-dot" style="--dot:#48e875"></span><span class="clock-theme-name">Orbita</span><span class="clock-theme-check">✓</span></button>
               </div>
             </div>
           </header>
@@ -320,6 +368,33 @@
                 <div class="clock-hand minute" id="clock-minute-hand"></div>
                 <div class="clock-hand second" id="clock-second-hand"></div>
                 <div class="clock-center-cap"></div>
+              </div>
+
+              <!-- ORBITA theme dial (rotating ring clock) -->
+              <div class="orbita-dial" id="orbita-dial" aria-label="Orbita analog clock">
+                <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <defs>
+                    <radialGradient id="orbita-face-grad" cx="50%" cy="45%" r="62%">
+                      <stop offset="0%" stop-color="#0b150e"/>
+                      <stop offset="68%" stop-color="#050805"/>
+                      <stop offset="100%" stop-color="#000000"/>
+                    </radialGradient>
+                  </defs>
+                  <circle class="orbita-face" cx="120" cy="120" r="114"/>
+                  <circle class="orbita-boundary" cx="120" cy="120" r="114"/>
+                  <circle class="orbita-boundary-inner" cx="120" cy="120" r="109"/>
+                  <circle class="orbita-sweep" id="orbita-sweep" cx="120" cy="120" r="114"/>
+                  <g id="orbita-seconds-ring"></g>
+                  <g id="orbita-minutes-ring"></g>
+                  <g id="orbita-hours-ring"></g>
+                  <path class="orbita-pointer" d="M 225 120 L 234 114 L 234 126 Z"/>
+                  <circle class="orbita-center-ring" cx="120" cy="120" r="7"/>
+                  <circle class="orbita-center" cx="120" cy="120" r="3.2"/>
+                </svg>
+                <div class="orbita-caption">
+                  <span class="orbita-day" id="orbita-day">SUNDAY</span>
+                  <span class="orbita-date" id="orbita-date">22 NOVEMBER 2026</span>
+                </div>
               </div>
             </div>
 
@@ -584,73 +659,23 @@
   </div>
 </div>
 
-<!-- ============ PDF BOOK READER ============ -->
-<div class="overlay book-reader-overlay" id="book-overlay">
-  <div class="book-reader" role="dialog" aria-modal="true" aria-label="PDF book reader">
-    <header class="book-reader-header">
-      <div class="book-reader-heading">
-        <div class="book-reader-title" id="book-reader-title">Your book</div>
-        <div class="book-reader-subtitle" id="book-reader-subtitle">3D flipbook</div>
-      </div>
-      <div class="book-reader-actions">
-        <div class="book-zoom-group" role="group" aria-label="Zoom controls">
-          <button class="book-reader-icon-btn" id="book-zoom-out" type="button" title="Zoom out" aria-label="Zoom out">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          </button>
-          <span class="book-zoom-label" id="book-zoom-label">100%</span>
-          <button class="book-reader-icon-btn" id="book-zoom-in" type="button" title="Zoom in" aria-label="Zoom in">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          </button>
-        </div>
-        <button class="book-reader-icon-btn" id="book-fullscreen-btn" type="button" title="Fullscreen" aria-label="Fullscreen">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button class="modal-close" id="book-close" type="button" aria-label="Close book"><svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
-      </div>
-    </header>
-    <div class="book-reader-body">
-      <div class="book-stage" id="book-stage">
-        <div class="book-loading" id="book-loading">Preparing your book…</div>
-        <div class="book-zoom-viewport" id="book-zoom-viewport">
-          <div id="book"></div>
-        </div>
-      </div>
-    </div>
-    <footer class="book-reader-footer">
-      <div class="book-progress"><span id="book-progress-bar"></span></div>
-      <div class="book-controls">
-        <button type="button" id="book-prev">&lsaquo; Previous</button>
-        <label class="book-page-jump" for="book-page-input">
-          <span>Page</span>
-          <input type="number" id="book-page-input" min="1" step="1" inputmode="numeric" aria-label="Jump to page" value="1">
-          <span class="book-page-total" id="book-page-total">/ 0</span>
-        </label>
-        <button type="button" id="book-next">Next &rsaquo;</button>
-        <button type="button" class="book-fullscreen-footer" id="book-fullscreen-footer" title="Fullscreen" aria-label="Fullscreen">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
-    </footer>
-  </div>
-</div>
-
 <input type="file" id="import-file-input" accept="application/json" style="display:none;">
 <div id="toast-stack" aria-live="polite"></div>
 
-<script src="js/config.js?v=30"></script>
-<script src="js/supabase.js?v=30"></script>
-<script src="js/store.js?v=30"></script>
-<script src="js/music.js?v=30"></script>
-<script src="js/db.js?v=30"></script>
-<script src="js/ui.js?v=30"></script>
-<script src="js/tools.js?v=30"></script>
-<script src="js/workspace.js?v=30"></script>
-<script src="js/data.js?v=30"></script>
-<script src="js/settings.js?v=30"></script>
-<script src="js/books.js?v=30"></script>
-<script src="js/events.js?v=30"></script>
-<script src="js/auth.js?v=30"></script>
-<script src="js/clock.js?v=30"></script>
-<script src="app.js?v=30"></script>
+<script src="js/config.js?v=36"></script>
+<script src="js/supabase.js?v=36"></script>
+<script src="js/store.js?v=36"></script>
+<script src="js/music.js?v=36"></script>
+<script src="js/db.js?v=36"></script>
+<script src="js/ui.js?v=36"></script>
+<script src="js/tools.js?v=36"></script>
+<script src="js/workspace.js?v=36"></script>
+<script src="js/data.js?v=36"></script>
+<script src="js/settings.js?v=36"></script>
+<script src="js/books.js?v=36"></script>
+<script src="js/events.js?v=36"></script>
+<script src="js/auth.js?v=36"></script>
+<script src="js/clock.js?v=36"></script>
+<script src="app.js?v=36"></script>
 </body>
 </html>

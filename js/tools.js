@@ -189,32 +189,44 @@ function renderGrid(){
 
   grid.innerHTML = list.map(tool => {
     const cat = getCategory(tool.categoryId);
-    const favSvg = tool.favorite ? '<span class="fav-indicator"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.3l-5.4 3.2 1.4-6.1L3 10l6.2-.5L12 3.7l2.8 5.8 6.2.5-4.9 4.4 1.4 6.1z"/></svg></span>' : '';
+    const description = (tool.description||'').trim() || (cat ? cat.name : 'Uncategorized');
+    const favSvg = tool.favorite ? '<span class="fav-indicator" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.3l-5.4 3.2 1.4-6.1L3 10l6.2-.5L12 3.7l2.8 5.8 6.2.5-4.9 4.4 1.4 6.1z"/></svg></span>' : '';
+    const icon = `<div class="tool-icon">${faviconMarkup(tool)}</div>`;
+
     if(State.settings.view === 'list'){
-      return `<div class="tool-card" data-id="${tool.id}" tabindex="0" role="button" aria-label="Open ${escapeHTML(tool.name)}">
-        <div class="tool-icon">${faviconMarkup(tool)}</div>
-        <div class="card-body">
-          <div class="tool-name">${escapeHTML(tool.name)}</div>
-          <div class="tool-desc">${escapeHTML(tool.description||'')}</div>
-          <div class="tool-badge"><span class="dot"></span>${escapeHTML(cat?cat.name:'Uncategorized')}</div>
+      return `<div class="tool-card list-card" data-id="${tool.id}" tabindex="0" role="button" aria-label="Open ${escapeHTML(tool.name)}">
+        ${icon}
+        <div class="list-info">
+          <div class="list-name">${escapeHTML(tool.name)}</div>
+          <div class="list-desc">${escapeHTML(description)}</div>
         </div>
+        <span class="tool-badge"><span class="dot"></span>${escapeHTML(cat?cat.name:'Uncategorized')}</span>
         ${favSvg}
+        <div class="list-cta" aria-hidden="true">
+          <span>Open</span><strong>${escapeHTML(tool.name)}</strong>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </div>
       </div>`;
     }
+
     if(State.settings.view === 'compact'){
-      return `<div class="tool-card" data-id="${tool.id}" tabindex="0" role="button" aria-label="Open ${escapeHTML(tool.name)}" title="${escapeHTML(tool.name)}">
-        <div class="tool-icon">${faviconMarkup(tool)}</div>
-        <div class="compact-name">${escapeHTML(tool.name)}</div>
+      return `<div class="tool-card compact-card" data-id="${tool.id}" tabindex="0" role="button" aria-label="Open ${escapeHTML(tool.name)}">
+        ${icon}
+        ${favSvg}
+        <div class="label-box">
+          <span class="glow-line" aria-hidden="true"></span>
+          <span class="display-name">${escapeHTML(tool.name)}</span>
+        </div>
       </div>`;
     }
-    return `<div class="tool-card" data-id="${tool.id}" tabindex="0" role="button" aria-label="Open ${escapeHTML(tool.name)}">
-      <div class="card-top">
-        <div class="tool-icon">${faviconMarkup(tool)}</div>
-        ${favSvg}
+
+    return `<div class="tool-card grid-card" data-id="${tool.id}" tabindex="0" role="button" aria-label="Open ${escapeHTML(tool.name)}">
+      ${icon}
+      <div class="grid-info">
+        <div class="grid-name">${escapeHTML(tool.name)}</div>
+        <div class="grid-desc">${escapeHTML(description)}</div>
       </div>
-      <div class="tool-name">${escapeHTML(tool.name)}</div>
-      <div class="tool-desc">${escapeHTML(tool.description||'')}</div>
-      <div class="tool-badge"><span class="dot"></span>${escapeHTML(cat?cat.name:'Uncategorized')}</div>
+      ${favSvg}
     </div>`;
   }).join('');
 

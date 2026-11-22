@@ -146,12 +146,90 @@ function startClock(){
 
   tzSelect.addEventListener("change", (e)=>{ selectedTz = e.target.value; });
 
+  // --- Orbita theme: rotating SVG ring clock ---
+  const orbitaDial = el("orbita-dial");
+  const orbitaRings = [];
+
+  function orbitaNode(type, attrs, parent){
+    const node = document.createElementNS("http://www.w3.org/2000/svg", type);
+    Object.entries(attrs).forEach(([key,value])=>node.setAttribute(key,String(value)));
+    parent.appendChild(node);
+    return node;
+  }
+
+  function buildOrbitaRing(groupId, radius, numberRadius, tickCount, labelClass){
+    const group = el(groupId);
+    if(!group) return null;
+    for(let i=0;i<tickCount;i++){
+      const rad = (i*(360/tickCount)*Math.PI)/180;
+      const major = tickCount === 12 || i%5 === 0;
+      const length = major ? 5 : 2.4;
+      orbitaNode("line",{
+        x1:120+Math.cos(rad)*(radius-length),
+        y1:120+Math.sin(rad)*(radius-length),
+        x2:120+Math.cos(rad)*radius,
+        y2:120+Math.sin(rad)*radius,
+        class:major ? "orbita-major" : "orbita-tick"
+      },group);
+    }
+    const labels = [];
+    for(let i=0;i<12;i++){
+      const rad = (i*30*Math.PI)/180;
+      const x = 120+Math.cos(rad)*numberRadius;
+      const y = 120+Math.sin(rad)*numberRadius;
+      const halo = orbitaNode("circle",{cx:x,cy:y,r:8.2,class:"orbita-halo"},group);
+      const text = orbitaNode("text",{x,y,class:"orbita-num "+labelClass},group);
+      text.textContent = tickCount === 12 ? (i === 0 ? "1" : String(i+1)) : String(i*5);
+      labels.push({element:text,halo,x,y,angle:i*30});
+    }
+    return {group,labels};
+  }
+
+  if(orbitaDial){
+    orbitaRings.push(buildOrbitaRing("orbita-seconds-ring",103,89,60,"seconds"));
+    orbitaRings.push(buildOrbitaRing("orbita-minutes-ring",77,63,60,"minutes"));
+    orbitaRings.push(buildOrbitaRing("orbita-hours-ring",50,36,12,"hours"));
+  }
+  const orbitaDay = el("orbita-day");
+  const orbitaDate = el("orbita-date");
+
+  function rotateOrbitaRing(ring, angle){
+    if(!ring || !ring.group) return;
+    ring.group.setAttribute("transform",`rotate(${-angle} 120 120)`);
+    let nearest = null;
+    let nearestDistance = Infinity;
+    ring.labels.forEach(label=>{
+      label.element.setAttribute("transform",`rotate(${angle} ${label.x} ${label.y})`);
+      const distance = Math.abs((((label.angle-angle)%360)+540)%360-180);
+      if(distance < nearestDistance){ nearestDistance = distance; nearest = label; }
+    });
+    ring.labels.forEach(label=>{
+      const active = label === nearest;
+      label.element.classList.toggle("active",active);
+      if(label.halo) label.halo.classList.toggle("active",active);
+    });
+  }
+
+  const orbitaSweep = el("orbita-sweep");
+
+  function renderOrbita(dayLong, dateLong, secSmooth, minSmooth, hrSmooth){
+    if(!orbitaDial || widget.getAttribute("data-dial-theme") !== "orbita") return;
+    rotateOrbitaRing(orbitaRings[0],secSmooth*6);
+    rotateOrbitaRing(orbitaRings[1],minSmooth*6);
+    rotateOrbitaRing(orbitaRings[2],((hrSmooth-1+12)%12)*30);
+    if(orbitaSweep) orbitaSweep.style.transform = `rotate(${secSmooth*6}deg)`;
+    if(orbitaDay) orbitaDay.textContent = dayLong;
+    if(orbitaDate) orbitaDate.textContent = dateLong;
+  }
+
   function getClockParts(now, tz){
     if(tz === "local"){
       return {
         h:now.getHours(), m:now.getMinutes(), s:now.getSeconds(), ms:now.getMilliseconds(),
         dayNum:String(now.getDate()),
-        dateText:now.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})
+        dateText:now.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}),
+        dayLong:now.toLocaleDateString("en-US",{weekday:"long"}).toUpperCase(),
+        dateLong:now.toLocaleDateString("en-US",{day:"2-digit",month:"long",year:"numeric"}).toUpperCase()
       };
     }
     const fmt = new Intl.DateTimeFormat("en-US",{
@@ -161,14 +239,20 @@ function startClock(){
     const map = Object.fromEntries(fmt.formatToParts(now).map((p)=>[p.type,p.value]));
     let h = parseInt(map.hour,10);
     if(h === 24) h = 0;
+    const mapLong = Object.fromEntries(new Intl.DateTimeFormat("en-US",{
+      timeZone:tz, weekday:"long", day:"2-digit", month:"long", year:"numeric"
+    }).formatToParts(now).map((p)=>[p.type,p.value]));
     return {
       h, m:parseInt(map.minute,10), s:parseInt(map.second,10), ms:now.getMilliseconds(),
-      dayNum:map.day, dateText:`${map.weekday}, ${map.month} ${map.day}`
+      dayNum:map.day, dateText:`${map.weekday}, ${map.month} ${map.day}`,
+      dayLong:mapLong.weekday.toUpperCase(),
+      dateLong:`${mapLong.day} ${mapLong.month} ${mapLong.year}`.toUpperCase()
     };
   }
 
   function updateClock(now){
-    const {h,m,s,ms,dayNum,dateText} = getClockParts(now, selectedTz);
+    const parts = getClockParts(now, selectedTz);
+    const {h,m,s,ms,dayNum,dateText} = parts;
     const secSmooth = s + ms/1000;
     const minSmooth = m + secSmooth/60;
     const hrSmooth = (h%12) + minSmooth/60;
@@ -184,6 +268,7 @@ function startClock(){
     digitalDate.textContent = dateText;
     dialDate.textContent = dayNum;
     dialMeridiem.textContent = ampm;
+    renderOrbita(parts.dayLong,parts.dateLong,secSmooth,minSmooth,hrSmooth);
   }
 
   // --- 2. Stopwatch (analog + digital) ---
