@@ -192,6 +192,8 @@ async function resetApp(){
     await DB.clearStore('books');
     await DB.clearStore('bookPages');
     await DB.clearMusicFiles();
+    await DB.flushCloud();
+    await DB.clearCloudStorage();
   }catch(e){ toast('Reset encountered a storage error', 'error'); }
   try{
     localStorage.removeItem(musicStorageKey('youtube-api-key'));
@@ -204,6 +206,8 @@ async function resetApp(){
   State.categories = [{id:UNCATEGORIZED_ID, name:'Uncategorized', system:true, createdAt: nowISO()}];
   State.settings = {theme:'dark', view:'grid', sort:'recent', lastBackupAt:null, landing:'auto', clickSound:'click', clockTheme:'emerald'};
   State.ui.activeNav = 'all';
+  bookItems = [];
+  renderBooks();
   applyTheme();
   await persistSettings();
   document.getElementById('reset-overlay').classList.remove('open');

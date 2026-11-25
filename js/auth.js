@@ -10,6 +10,13 @@ let authMode='login';
 let manualSignOut=false;
 let recoveryActive=false;
 function authMessage(message,isError=false){const el=document.getElementById('auth-message');el.textContent=message;el.classList.toggle('error',isError);}
+function isOfflineError(error){
+  if(typeof navigator!=='undefined' && navigator.onLine===false) return true;
+  const message=String(error?.message||error||'').toLowerCase();
+  return /failed to fetch|networkerror|network error|load failed|err_internet_disconnected|err_network|err_connection|timed? ?out|fetch failed/.test(message);
+}
+const OFFLINE_AUTH_MESSAGE="It looks like you don't have an internet connection. Please check your connection and try again.";
+const OFFLINE_LIBRARY_MESSAGE="It looks like you're offline — showing your saved library on this device.";
 function setAuthMode(mode){authMode=mode;const title=document.getElementById('auth-title'),sub=document.getElementById('auth-sub'),submit=document.getElementById('auth-submit'),toggle=document.getElementById('auth-toggle'),forgot=document.getElementById('auth-forgot');const isSignup=mode==='signup';document.getElementById('auth-confirm-wrap').style.display=isSignup?'block':'none';document.getElementById('auth-password-wrap').style.display='block';document.getElementById('auth-password').required=true;document.getElementById('auth-confirm').required=isSignup;title.textContent=isSignup?'Create your account':'Welcome back';sub.textContent=isSignup?'Create an account to keep your tools synced securely.':'Sign in to access your personal cloud-synced tool library.';submit.textContent=isSignup?'Create account':'Sign in';toggle.textContent=isSignup?'Already have an account? Sign in':'New to Toolify? Sign up';forgot.style.display=isSignup?'none':'block';authMessage('');}
 async function showAuthenticatedApp(user){
   if(currentUser && currentUser.id===user.id) return;
@@ -17,51 +24,109 @@ async function showAuthenticatedApp(user){
   State.tools=[];
   State.categories=[];
   State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click',clockTheme:'emerald',quickTools:undefined,notes:[],tasks:[]};
+  showSplash('Restoring your workspace…');
   setLibraryLoading(true);
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   document.getElementById('mac-signout').title=user.email||'Sign out';
   render();
-  try{
-    await DB.open();
-    await initAppData();
-    showFeatureAnnouncement();
+
+  /* The cached library is already on screen. Cloud data is merged in the
+     background so the short splash never sits idle waiting on network. */
+  const refreshFromCloud = async () => {
     try{
       await DB.syncForUser(user);
-      const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);
+      if(currentUser?.id !== user.id) return;
+      const [tools,categories,settingsRows,books]=await Promise.all([
+        DB.getAll('tools'), DB.getAll('categories'), DB.getAll('settings'), DB.getAllBooks()
+      ]);
       State.tools=tools;
       State.categories=categories;
       const saved=settingsRows.find(row=>row.key==='app');
       if(saved) Object.assign(State.settings,saved.value);
+      bookItems=books.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+      renderBooks();
       setLibraryLoading(false);
       applyTheme();
       render();
+      try{
+        await DB.syncBooksForUser(user);
+        const refreshed=await DB.getAllBooks();
+        if(currentUser?.id !== user.id) return;
+        bookItems=refreshed.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+        renderBooks();
+      }catch(bookError){
+        console.warn('Book sync unavailable:',bookError);
+      }
     }catch(error){
-      console.error('Cloud sync failed:',error);
+      console.warn('Cloud sync unavailable:',error);
       setLibraryLoading(false);
       render();
-      toast('Offline: showing saved library','error');
+      toast(isOfflineError(error)?OFFLINE_LIBRARY_MESSAGE:'Cloud sync is unavailable — showing your saved library.','error');
     }
+  };
+
+  try{
+    await DB.open();
+    await initAppData();
+    showFeatureAnnouncement();
+    setLibraryLoading(false);
+    applyTheme();
+    render();
+    void refreshFromCloud();
+    await hideSplash();
   }catch(error){
+    cancelSplash();
     setLibraryLoading(false);
     render();
     console.error(error);
-    authMessage('Could not open your library: '+(error.message||'Please try again.'),true);
+    if(isOfflineError(error)){
+      toast(OFFLINE_LIBRARY_MESSAGE,'error');
+      return;
+    }
+    authMessage('We couldn\'t open your library right now. Please try again.',true);
     document.getElementById('auth-screen').style.display='flex';
     document.getElementById('app').style.display='none';
   }
 }
-async function initAppData(){try{const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);State.tools=tools;State.categories=categories;const saved=settingsRows.find(r=>r.key==='app');if(saved)Object.assign(State.settings,saved.value);}catch(e){toast('Could not load saved data','error');}ensureUncategorized();const ids=new Set(State.categories.map(c=>c.id));let fixed=false;State.tools.forEach(t=>{if(!ids.has(t.categoryId)){t.categoryId=UNCATEGORIZED_ID;fixed=true;}});if(fixed)await DB.bulkPut('tools',State.tools);if(!State.categories.length)ensureUncategorized();await DB.bulkPut('categories',State.categories);applyTheme();resetMusicSettingsRef();State.ui.activeNav=State.tools.some(t=>t.favorite)?'favorites':'all';wireEvents();render();}
+async function initAppData(){
+  try{
+    const [tools,categories,settingsRows]=await Promise.all([DB.getAll('tools'),DB.getAll('categories'),DB.getAll('settings')]);
+    State.tools=tools;
+    State.categories=categories;
+    const saved=settingsRows.find(r=>r.key==='app');
+    if(saved) Object.assign(State.settings,saved.value);
+  }catch(e){ toast('Could not load saved data','error'); }
+  ensureUncategorized();
+  const ids=new Set(State.categories.map(c=>c.id));
+  let fixed=false;
+  State.tools.forEach(t=>{
+    if(!ids.has(t.categoryId)){ t.categoryId=UNCATEGORIZED_ID; fixed=true; }
+  });
+  try{
+    /* Startup repairs stay local; the first cloud sync uploads the result. */
+    if(fixed) await DB.bulkPutLocal('tools',State.tools);
+    if(!State.categories.length) ensureUncategorized();
+    await DB.bulkPutLocal('categories',State.categories);
+  }catch(e){ console.warn('Offline: local library kept, cloud update skipped:',e); }
+  applyTheme();
+  resetMusicSettingsRef();
+  State.ui.activeNav=State.tools.some(t=>t.favorite)?'favorites':'all';
+  wireEvents();
+  render();
+}
 async function init(){
   if(!supabaseClient){
+    cancelSplash();
     document.getElementById('auth-screen').style.display='flex';
-    authMessage('Could not load sign-in services. Check your connection and refresh.',true);
+    authMessage(navigator.onLine===false?OFFLINE_AUTH_MESSAGE:'Sign-in services are unavailable right now. Please refresh and try again.',true);
     return;
   }
   try{
     await DB.open();
   }catch(error){
     console.error('Could not open local database:',error);
+    cancelSplash();
     document.getElementById('auth-screen').style.display='flex';
     authMessage('Local storage is unavailable. Enable site storage and refresh.',true);
     return;
@@ -82,6 +147,7 @@ async function init(){
     if(event==='PASSWORD_RECOVERY'){
       recoveryActive=true;
       authUrlProcessing=false;
+      cancelSplash();
       document.getElementById('app').style.display='none';
       document.getElementById('auth-screen').style.display='flex';
       document.getElementById('password-reset-overlay').classList.add('open');
@@ -92,6 +158,7 @@ async function init(){
     if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'){if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}return;}
     if(event==='SIGNED_OUT'){
       manualSignOut=false;
+      cancelSplash();
       if(currentUser){setCurrentUser(null);await DB.clearLocal();}
       document.getElementById('app').style.display='none';
       document.getElementById('auth-screen').style.display='flex';
@@ -105,8 +172,17 @@ async function init(){
     window.setTimeout(()=>{
       authUrlProcessing=false;
       if(!recoveryActive){
-        supabaseClient.auth.getSession().then(({data:{session:currentSession}})=>{
-          if(currentSession?.user&&!currentUser) showAuthenticatedApp(currentSession.user);
+        supabaseClient.auth.getSession().then(async ({data:{session:currentSession}})=>{
+          if(currentSession?.user&&!currentUser){
+            await showAuthenticatedApp(currentSession.user);
+            return;
+          }
+          if(!currentUser){
+            await hideSplash();
+            document.getElementById('auth-screen').style.display='flex';
+            document.getElementById('app').style.display='none';
+            setAuthMode('login');
+          }
         }).catch(()=>{});
       }
     },1500);
@@ -114,6 +190,7 @@ async function init(){
   if(session?.user){
     if(recoveryType){
       recoveryActive=true;
+      cancelSplash();
       document.getElementById('app').style.display='none';
       document.getElementById('auth-screen').style.display='flex';
       document.getElementById('password-reset-overlay').classList.add('open');
@@ -122,6 +199,7 @@ async function init(){
       await showAuthenticatedApp(session.user);
     }
   }else if(!authUrlProcessing){
+    await hideSplash();
     document.getElementById('auth-screen').style.display='flex';
     document.getElementById('app').style.display='none';
   }
@@ -137,7 +215,7 @@ document.getElementById('auth-form').addEventListener('submit',async e=>{
     }else{
       const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;await showAuthenticatedApp(data.user);
     }
-  }catch(err){authMessage(err.message||'Authentication failed.',true);}finally{submit.disabled=false;}
+  }catch(err){authMessage(isOfflineError(err)?OFFLINE_AUTH_MESSAGE:(err.message||'Authentication failed.'),true);}finally{submit.disabled=false;}
 });
 document.getElementById('auth-toggle').addEventListener('click',()=>setAuthMode(authMode==='signup'?'login':'signup'));
 document.getElementById('auth-forgot').addEventListener('click',async()=>{
@@ -150,12 +228,13 @@ document.getElementById('auth-forgot').addEventListener('click',async()=>{
     });
     if(error)throw error;
     authMessage('Password reset link sent. Check your email.');
-  }catch(err){authMessage(err.message||'Could not send the reset link.',true);}
+  }catch(err){authMessage(isOfflineError(err)?OFFLINE_AUTH_MESSAGE:(err.message||'Could not send the reset link.'),true);}
   finally{button.disabled=false;}
 });
 
 async function signOut(){
   manualSignOut=true;
+  cancelSplash();
   setCurrentUser(null);
   document.getElementById('app').style.display='none';
   document.getElementById('auth-screen').style.display='flex';
@@ -346,6 +425,7 @@ if('serviceWorker' in navigator){
 
 init().catch(error=>{
   console.error('Toolify startup failed:',error);
+  cancelSplash();
   document.getElementById('auth-screen').style.display='flex';
-  authMessage(error?.message || 'Could not start Toolify.',true);
+  authMessage(isOfflineError(error)?OFFLINE_AUTH_MESSAGE:(error?.message || 'Could not start Toolify.'),true);
 });

@@ -6,16 +6,21 @@
 /* ============================================================
    5. CATEGORY HELPERS
    ============================================================ */
+let categoryLookup = new Map();
+function refreshCategoryLookup(){
+  categoryLookup = new Map(State.categories.map(category => [category.id, category]));
+}
 function getCategory(id){
-  return State.categories.find(c => c.id === id) || State.categories.find(c => c.id === UNCATEGORIZED_ID);
+  return categoryLookup.get(id) || categoryLookup.get(UNCATEGORIZED_ID);
 }
 function categoryToolCount(id){
   return State.tools.filter(t => t.categoryId === id).length;
 }
 function ensureUncategorized(){
-  if(!State.categories.find(c => c.id === UNCATEGORIZED_ID)){
+  if(!State.categories.some(c => c.id === UNCATEGORIZED_ID)){
     State.categories.push({id: UNCATEGORIZED_ID, name:"Uncategorized", system:true, createdAt: nowISO()});
   }
+  refreshCategoryLookup();
 }
 
 /* ============================================================
@@ -31,6 +36,7 @@ function iconSVG(name){
 }
 
 function renderSidebar(){
+  refreshCategoryLookup();
   const sys = document.getElementById('nav-system');
   const favCount = State.tools.filter(t => t.favorite).length;
   const allCount = State.tools.length;
@@ -141,7 +147,27 @@ function faviconMarkup(tool){
   return `<img src="${escapeHTML(src)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='<div class=&quot;tool-icon-fallback&quot;>${escapeHTML(initial)}</div>'">`;
 }
 
+let gridEventsWired = false;
+function ensureGridEvents(){
+  if(gridEventsWired) return;
+  const grid = document.getElementById('tool-grid');
+  if(!grid) return;
+  grid.addEventListener('click', event => {
+    const card = event.target.closest('.tool-card');
+    if(card) openTool(State.tools.find(tool => tool.id === card.dataset.id));
+  });
+  grid.addEventListener('keydown', event => {
+    if(event.key !== 'Enter' && event.key !== ' ') return;
+    const card = event.target.closest('.tool-card');
+    if(!card) return;
+    event.preventDefault();
+    openTool(State.tools.find(tool => tool.id === card.dataset.id));
+  });
+  gridEventsWired = true;
+}
+
 function renderGrid(){
+  ensureGridEvents();
   const list = getCurrentToolset();
   renderTopbar(list);
   const grid = document.getElementById('tool-grid');
@@ -230,12 +256,6 @@ function renderGrid(){
     </div>`;
   }).join('');
 
-  grid.querySelectorAll('.tool-card').forEach(card => {
-    const id = card.dataset.id;
-    const tool = State.tools.find(t=>t.id===id);
-    card.addEventListener('click', ()=> openTool(tool));
-    card.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTool(tool); } });
-  });
 }
 
 let contextMenuTarget = null;

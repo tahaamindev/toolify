@@ -10,10 +10,9 @@ function uid(){
   return 't_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,9);
 }
 function nowISO(){ return new Date().toISOString(); }
+const HTML_ESCAPES = {'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'};
 function escapeHTML(str){
-  const d = document.createElement('div');
-  d.textContent = str == null ? "" : String(str);
-  return d.innerHTML;
+  return String(str == null ? '' : str).replace(/[&<>"']/g, char => HTML_ESCAPES[char]);
 }
 function debounce(fn, wait){
   let t;

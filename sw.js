@@ -1,11 +1,12 @@
 // ============================================================
 // TOOLIFY — Service Worker (Offline + Auto-Update)
 // ============================================================
-const CACHE_NAME = 'toolify-v59';
+const CACHE_NAME = 'toolify-v68';
 const APP_SHELL = [
   './', './index.html', './styles.css', './app.js', './manifest.json', './logo.png', './logo-192.png', './logo-512.png',
   './js/config.js', './js/store.js', './js/supabase.js', './js/db.js', './js/ui.js', './js/music.js',
-  './js/workspace.js', './js/tools.js', './js/data.js', './js/settings.js', './js/books.js', './js/auth.js', './js/events.js', './js/clock.js'
+  './js/workspace.js', './js/tools.js', './js/data.js', './js/settings.js', './js/splash.js',
+  './js/books.js', './js/auth.js', './js/events.js', './js/clock.js'
 ];
 
 // Install: cache the app shell
@@ -50,16 +51,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Other same-origin assets: cache first, network fallback
+  // Other same-origin assets: instant cache hit, then refresh it in the
+  // background so the next open is already on the newest version.
   event.respondWith(
     caches.match(request, { ignoreSearch: true }).then((cached) => {
-      if(cached) return cached;
-      return fetch(request).then((response) => {
+      const network = fetch(request).then((response) => {
         if(response.ok){
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone())).catch(() => {});
         }
         return response;
-      });
+      }).catch(() => cached || Response.error());
+      return cached || network;
     })
   );
 });

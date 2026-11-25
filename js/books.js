@@ -1,10 +1,36 @@
 /* ============================================================
    TOOLIFY — PDF Books (device-only 3D flipbook library)
-   Books live only in this device's IndexedDB store. No cloud
-   sync and no upload size limit. Pages are rendered lazily into
-   high-resolution canvases, so a book opens immediately instead
-   of waiting for every page to be converted first.
    ============================================================ */
+
+let bookLibsPromise = null;
+
+function loadScriptOnce(src){
+  return new Promise((resolve,reject)=>{
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = false;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Could not load ' + src));
+    document.head.appendChild(script);
+  });
+}
+
+/* PDF.js and PageFlip are only needed when a book is actually opened.
+   Loading them on demand keeps the post-login startup fast. */
+function loadBookViewerLibraries(){
+  if(window.pdfjsLib && window.St?.PageFlip) return Promise.resolve();
+  if(!bookLibsPromise){
+    bookLibsPromise = loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js')
+      .then(() => loadScriptOnce('https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js'))
+      .then(() => {
+        if(!window.pdfjsLib || !window.St?.PageFlip){
+          throw new Error('Flipbook libraries could not load. Check your connection and try again.');
+        }
+      })
+      .catch(error => { bookLibsPromise = null; throw error; });
+  }
+  return bookLibsPromise;
+}
 
 const BOOK_PAGE_WIDTH = 600;
 const BOOK_PAGE_HEIGHT = 800;
@@ -101,6 +127,7 @@ async function handleBookUpload(file){
       size: file.size,
       pageCount: 0,
       createdAt: new Date().toISOString(),
+      storagePath: null,
       blob: new Blob([buffer], {type: 'application/pdf'})
     };
     await DB.putBook(record);
@@ -108,7 +135,7 @@ async function handleBookUpload(file){
     await DB.delBookPages(record.id).catch(() => {});
     bookItems.unshift(record);
     renderBooks();
-    booksStatus('Saved on this device.');
+    booksStatus(currentUser && supabaseClient ? 'Saved locally · syncing to your Toolify cloud…' : 'Saved on this device.');
     toast('PDF added to your books');
   }catch(error){
     console.error(error);
@@ -300,12 +327,21 @@ async function openBook(id){
   bookRenderingPages.clear();
   resetBookPageUI();
   applyBookZoom();
-  setBookLoading('Opening your book…');
+  setBookLoading('Preparing the viewer…');
 
   try{
-    if(!window.pdfjsLib || !window.St || !window.St.PageFlip){
-      throw new Error('Flipbook libraries could not load. Check your connection and refresh.');
+    await loadBookViewerLibraries();
+    if(myToken !== bookRenderToken) return;
+
+    if(!book.blob && book.storagePath){
+      setBookLoading('Downloading from your Toolify cloud…');
+      book.blob = await DB.getCloudBookBlob(book);
+      if(myToken !== bookRenderToken) return;
+      await DB.putBook(book);
     }
+    if(!book.blob) throw new Error('This PDF is not available on this device or in your cloud library.');
+
+    setBookLoading('Opening your book…');
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const buffer = await book.blob.arrayBuffer();
     if(myToken !== bookRenderToken) return;
@@ -458,4 +494,3 @@ document.addEventListener('keydown', (event) => {
 });
 
 setControls(false);
-loadBooks();

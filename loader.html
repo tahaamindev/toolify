@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Loader</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+
+  #app { position: fixed; inset: 0; display: grid; place-items: center; font: 600 22px system-ui, sans-serif; color: #0d3b20; background: #f4faf6; }
+
+  #loader {
+    --accent: #12a150;
+    position: fixed; inset: 0; z-index: 9999; background: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 44px;
+    transition: opacity .7s ease, visibility .7s ease;
+  }
+  #loader.out { opacity: 0; visibility: hidden; }
+
+  .mark { position: relative; width: clamp(110px, 24vmin, 160px); aspect-ratio: 1; transition: transform .7s cubic-bezier(.6,0,.2,1), opacity .5s ease; }
+  .out .mark { transform: scale(1.12); opacity: 0; }
+
+  .mark img {
+    width: 100%; height: 100%; object-fit: contain; display: block;
+    clip-path: polygon(0 100%, 0 100%, 0 100%, 0 100%);
+    opacity: 0; transform: scale(.92); filter: blur(8px);
+    animation: reveal 1.25s cubic-bezier(.22,1,.36,1) .25s forwards, float 4s ease-in-out 1.6s infinite;
+  }
+  .mark::after {                       /* soft ground shadow */
+    content: ""; position: absolute; left: 15%; right: 15%; bottom: -26px; height: 14px; border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(18,161,80,.28), transparent 70%);
+    opacity: 0; animation: fade .8s ease 1.1s forwards, shadow 4s ease-in-out 1.6s infinite;
+  }
+
+  .line { width: 120px; height: 2px; background: #e4efe8; border-radius: 2px; overflow: hidden; opacity: 0; animation: fade .6s ease 1s forwards; }
+  .line span { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
+
+  @keyframes reveal {      /* diagonal wipe, arrow ki direction me */
+    0%   { clip-path: polygon(0 100%, 0 100%, 0 100%, 0 100%); opacity: 0; transform: scale(.92); filter: blur(8px); }
+    30%  { opacity: 1; }
+    100% { clip-path: polygon(0 0, 200% 0, 200% 200%, 0 200%); opacity: 1; transform: scale(1); filter: blur(0); }
+  }
+  @keyframes float  { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes shadow { 0%,100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(.8); opacity: .6; } }
+  @keyframes fade   { to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div id="app">Your app is ready ✔</div>
+
+<div id="loader">
+  <div class="mark"><img id="logo" src="logo.png" alt=""></div>
+  <div class="line"><span id="bar"></span></div>
+</div>
+
+<script>
+const CONFIG = {
+  SOUND: true,           // soft chime (browser me pehle tap ke baad chalti hai)
+  MIN_MS: 2600,          // loader kam az kam itni der dikhe
+  DEMO_FINISH_MS: 3000   // demo. Real app me 0 karein aur Loader.done() call karein
+};
+
+const Loader = (() => {
+  const loader = document.getElementById('loader'), bar = document.getElementById('bar');
+  const t0 = performance.now();
+  let ready = false, p = 0, last = t0, finished = false;
+
+  /* ---- soft chime ---- */
+  let ctx;
+  function chime() {
+    if (!CONFIG.SOUND) return;
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state !== 'running') return;
+      [659.25, 987.77].forEach((f, i) => {
+        const t = ctx.currentTime + i * .12, o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.12, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + 1.3);
+        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 1.4);
+      });
+    } catch (e) {}
+  }
+  const unlock = () => { try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch (e) {} };
+  addEventListener('pointerdown', unlock, { once: true });
+  addEventListener('keydown', unlock, { once: true });
+  setTimeout(chime, 900);              // logo reveal ke saath
+
+  /* ---- smooth progress ---- */
+  (function step(now) {
+    const dt = Math.min((now - last) / 1000, .05); last = now;
+    const canFinish = now - t0 >= CONFIG.MIN_MS;
+    const target = (ready && canFinish) ? 100 : (ready ? 96 : Math.min(90, (now - t0) / 30));
+    p += (target - p) * (1 - Math.exp(-dt * 3));
+    if (target === 100 && p > 99.5) p = 100;
+    bar.style.transform = `scaleX(${p / 100})`;
+    if (p >= 100 && !finished) { finish(); return; }
+    requestAnimationFrame(step);
+  })(t0);
+
+  function finish() {
+    finished = true; chime();
+    setTimeout(() => {
+      loader.classList.add('out');
+      setTimeout(() => { loader.remove(); window.dispatchEvent(new Event('loader:done')); }, 750);
+    }, 250);
+  }
+
+  return { done() { ready = true; } };   // app ready hone par: Loader.done()
+})();
+
+window.Loader = Loader;
+if (CONFIG.DEMO_FINISH_MS > 0) setTimeout(Loader.done, CONFIG.DEMO_FINISH_MS);
+</script>
+</body>
+</html>

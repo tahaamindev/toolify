@@ -3,17 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  window.TOOLIFY_BOOT_AT = performance.now();
+  document.documentElement.classList.add('toolify-booting');
+</script>
 <link rel="icon" href="logo.png?v=3" sizes="any">
 <link rel="apple-touch-icon" href="logo.png?v=3">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111312">
 <title>Toolify —  Tool Library</title>
-<link rel="stylesheet" href="styles.css?v=27">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+<link rel="preconnect" href="https://ihlqghvdfunsfdnlaoks.supabase.co" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+<link rel="stylesheet" href="styles.css?v=45">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<div id="splash-screen" class="loading-screen" role="status" aria-live="polite" aria-label="Loading Toolify" hidden>
+  <div class="mark" aria-hidden="true"><img id="splash-logo" src="logo.png?v=45" alt="" fetchpriority="high" decoding="async"></div>
+  <div class="line" aria-hidden="true"><span id="splash-bar"></span></div>
+</div>
+<script>
+/* The boot class displays the splash immediately; keep the hidden state in
+   sync so the controller can measure the full minimum duration. */
+document.getElementById('splash-screen').hidden = false;
+</script>
 
 <section id="auth-screen" style="display:flex">
   <nav class="auth-nav" aria-label="Toolify navigation">
@@ -662,20 +677,21 @@
 <input type="file" id="import-file-input" accept="application/json" style="display:none;">
 <div id="toast-stack" aria-live="polite"></div>
 
-<script src="js/config.js?v=36"></script>
-<script src="js/supabase.js?v=36"></script>
-<script src="js/store.js?v=36"></script>
-<script src="js/music.js?v=36"></script>
-<script src="js/db.js?v=36"></script>
-<script src="js/ui.js?v=36"></script>
-<script src="js/tools.js?v=36"></script>
-<script src="js/workspace.js?v=36"></script>
-<script src="js/data.js?v=36"></script>
-<script src="js/settings.js?v=36"></script>
-<script src="js/books.js?v=36"></script>
-<script src="js/events.js?v=36"></script>
-<script src="js/auth.js?v=36"></script>
-<script src="js/clock.js?v=36"></script>
-<script src="app.js?v=36"></script>
+<script defer src="js/config.js?v=45"></script>
+<script defer src="js/supabase.js?v=45"></script>
+<script defer src="js/store.js?v=45"></script>
+<script defer src="js/ui.js?v=45"></script>
+<script defer src="js/db.js?v=45"></script>
+<script defer src="js/music.js?v=45"></script>
+<script defer src="js/tools.js?v=45"></script>
+<script defer src="js/workspace.js?v=45"></script>
+<script defer src="js/data.js?v=45"></script>
+<script defer src="js/settings.js?v=45"></script>
+<script defer src="js/splash.js?v=45"></script>
+<script defer src="js/books.js?v=45"></script>
+<script defer src="js/events.js?v=45"></script>
+<script defer src="js/auth.js?v=45"></script>
+<script defer src="js/clock.js?v=45"></script>
+<script defer src="app.js?v=45"></script>
 </body>
 </html>
