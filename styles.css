@@ -870,6 +870,8 @@ a{color:inherit;}
 
 /* ============================================================
    RESPONSIVE
+   Device-specific overrides live in responsive.css, loaded after
+   this file from index.html.
    ============================================================ */
 @media (max-width: 860px){
   #auth-screen{grid-template-columns:1fr;overflow:auto;background:var(--bg)}

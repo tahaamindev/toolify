@@ -204,7 +204,7 @@ async function resetApp(){
   }
   State.tools = [];
   State.categories = [{id:UNCATEGORIZED_ID, name:'Uncategorized', system:true, createdAt: nowISO()}];
-  State.settings = {theme:'dark', view:'grid', sort:'recent', lastBackupAt:null, landing:'auto', clickSound:'click', clockTheme:'emerald'};
+  State.settings = {theme:'dark', view:'grid', sort:'recent', lastBackupAt:null, landing:'auto', clickSound:'click', clockTheme:'emerald', notes:[], tasks:[], updatedAt:Date.now()};
   State.ui.activeNav = 'all';
   bookItems = [];
   renderBooks();

@@ -1,13 +1,13 @@
 /* ============================================================
    TOOLIFY — Loading screen from loader.html
    Same white reveal wipe, logo float, ground shadow, progress bar
-   and soft chime. Retimed for a fast flash: app opens as soon as
-   it is ready, with a ~350ms minimum and a 900ms hard cap.
+   and soft chime. The loader stays visible for a full 2 seconds
+   so the first cloud sync can settle before the app is revealed.
    `window.hideLoader()` / `window.Loader.done()` kept as APIs.
    ============================================================ */
 
-const SPLASH_MIN_MS = 350;
-const SPLASH_MAX_MS = 900;
+const SPLASH_MIN_MS = 2000;
+const SPLASH_MAX_MS = 2000;
 const SPLASH_FINISH_DELAY_MS = 30;
 const SPLASH_OUT_MS = 170;
 const SPLASH_SOUND = true;
@@ -82,7 +82,7 @@ function splashTick(now){
   const canFinish = now - splashShownAt >= SPLASH_MIN_MS;
   const target = (splashReady && canFinish)
     ? 100
-    : (splashReady ? 96 : Math.min(90, (now - splashShownAt) / 2.5));
+    : (splashReady ? 96 : Math.min(92, (now - splashShownAt) / 22));
   splashProgress += (target - splashProgress) * (1 - Math.exp(-delta * 20));
   if(target === 100 && splashProgress > 99.5) splashProgress = 100;
 

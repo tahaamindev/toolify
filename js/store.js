@@ -27,8 +27,19 @@ tasks: []
   }
 };
 
+/* Incremented on every settings save so a cloud refresh can tell whether the
+   user changed notes/tasks while the remote snapshot was still loading. */
+window.TOOLIFY_SETTINGS_REVISION = 0;
+
 async function persistSettings(){
-  await DB.put("settings", {key:"app", value: State.settings});
+  /* Stamp and snapshot the settings so notes/tasks saved during startup sync
+     are never replaced by an older cloud row. */
+  State.settings.updatedAt = Date.now();
+  window.TOOLIFY_SETTINGS_REVISION = (window.TOOLIFY_SETTINGS_REVISION || 0) + 1;
+  const snapshot = typeof structuredClone === 'function'
+    ? structuredClone(State.settings)
+    : JSON.parse(JSON.stringify(State.settings));
+  await DB.put("settings", {key:"app", value: snapshot});
 }
 function persistSettingsFast(){
   persistSettings().catch(error=>{

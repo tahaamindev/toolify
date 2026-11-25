@@ -5,7 +5,7 @@
 
 function setRightPanel(panelName,forceOpen=false){
   const dock = document.querySelector('.quick-tools');
-  const isMobile = window.matchMedia('(max-width: 860px)').matches;
+  const isMobile = window.matchMedia(`(max-width: ${window.TOOLIFY_MOBILE_MAX || 860}px)`).matches;
   const activeTab = document.querySelector('.quick-tools-tab.active');
   const wasSamePanel = activeTab?.dataset.rightPanel === panelName;
   const mobilePanelOpen = dock.classList.contains('mobile-panel-open');
@@ -61,7 +61,7 @@ function renderQuickNotes(){
       event.stopPropagation();
       State.settings.notes = notesList().filter(note=>note.id !== button.dataset.deleteNote);
       renderQuickNotes();
-      persistSettingsFast();
+      await persistSettings();
     });
   });
 }

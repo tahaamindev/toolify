@@ -1,10 +1,10 @@
 // ============================================================
 // TOOLIFY — Service Worker (Offline + Auto-Update)
 // ============================================================
-const CACHE_NAME = 'toolify-v68';
+const CACHE_NAME = 'toolify-v71';
 const APP_SHELL = [
-  './', './index.html', './styles.css', './app.js', './manifest.json', './logo.png', './logo-192.png', './logo-512.png',
-  './js/config.js', './js/store.js', './js/supabase.js', './js/db.js', './js/ui.js', './js/music.js',
+  './', './index.html', './styles.css', './responsive.css', './app.js', './manifest.json', './logo.png', './logo-192.png', './logo-512.png',
+  './js/config.js', './js/store.js', './js/supabase.js', './js/db.js', './js/ui.js', './js/responsive.js', './js/music.js',
   './js/workspace.js', './js/tools.js', './js/data.js', './js/settings.js', './js/splash.js',
   './js/books.js', './js/auth.js', './js/events.js', './js/clock.js'
 ];

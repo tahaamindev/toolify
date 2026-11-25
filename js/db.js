@@ -222,12 +222,54 @@ const DB = (function(){
       settings:value.data?.settings || {}
     };
   }
+  function isConflictTargetError(error){
+    const message = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+    return message.includes('no unique') ||
+      message.includes('on conflict') ||
+      message.includes('unique or exclusion constraint');
+  }
+
+  /* Some Supabase projects only declare `id` as the primary key while older
+     ones declare a composite (user_id,id)/(user_id,key). Try both, then do a
+     scoped replace, so every table actually writes instead of silently
+     failing on the ON CONFLICT target. */
+  async function cloudReplaceRow(name,row){
+    const keyColumn = name === 'settings' ? 'key' : 'id';
+    const keyValue = name === 'settings' ? row.key : row.id;
+    const updated = await supabaseClient.from(tableFor[name])
+      .update(row).eq('user_id', row.user_id).eq(keyColumn, keyValue).select(keyColumn);
+    if(updated.error) throw updated.error;
+    if(updated.data?.length) return;
+    const inserted = await supabaseClient.from(tableFor[name]).insert(row);
+    if(inserted.error) throw inserted.error;
+  }
+
+  function settingsTimestamp(row){
+    const value = row?.value;
+    if(!value || typeof value !== 'object') return 0;
+    return Number(value.updatedAt || 0) || 0;
+  }
+  function mergeSettingsRows(localRows,remoteRows){
+    const byKey = new Map();
+    remoteRows.forEach(row => { if(row?.key) byKey.set(row.key, row); });
+    localRows.forEach(row => {
+      if(!row?.key) return;
+      const current = byKey.get(row.key);
+      if(!current || settingsTimestamp(row) >= settingsTimestamp(current)) byKey.set(row.key, row);
+    });
+    return Array.from(byKey.values());
+  }
+
   async function cloudUpsert(name,values){
     if(!cloudReady() || !values.length) return;
     const rows = values.map(value => toCloud(name,value));
-    const conflict = name === 'settings' ? 'user_id,key' : 'user_id,id';
-    const {error} = await supabaseClient.from(tableFor[name]).upsert(rows,{onConflict:conflict});
-    if(error) throw error;
+    const conflicts = name === 'settings' ? ['user_id,key'] : ['user_id,id','id'];
+    for(const onConflict of conflicts){
+      const {error} = await supabaseClient.from(tableFor[name]).upsert(rows,{onConflict});
+      if(!error) return;
+      if(!isConflictTargetError(error)) throw error;
+    }
+    for(const row of rows) await cloudReplaceRow(name,row);
   }
   async function cloudDelete(name,key){
     if(!cloudReady()) return;
@@ -301,6 +343,17 @@ const DB = (function(){
           return rows.length ? cloudUpsert(name, rows) : Promise.resolve();
         }));
         names.forEach(name => { remote[name] = local[name].slice(); });
+      }else{
+        /* A note/task saved locally just before a slow login must win over an
+           older cloud snapshot. Normalize duplicate settings rows too. */
+        const before = JSON.stringify(remote.settings);
+        remote.settings = mergeSettingsRows(local.settings, remote.settings);
+        if(JSON.stringify(remote.settings) !== before){
+          try{
+            await cloudClear('settings');
+            if(remote.settings.length) await cloudUpsert('settings', remote.settings);
+          }catch(error){ console.warn('Could not normalize cloud settings:', error); }
+        }
       }
 
       await Promise.all(names.map(async name => {

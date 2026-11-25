@@ -1,0 +1,389 @@
+/* ============================================================
+   TOOLIFY — Responsive layer
+   Loaded after styles.css. Everything is grouped here so the base
+   stylesheet stays focused on the visual system.
+
+   1. Foundations (safe areas, layers, sizing)
+   2. Large screens
+   3. Small laptops / tablets
+   4. Mobile shell (<= 860px)
+   5. Narrow layout details (<= 700px)
+   6. Phones (<= 600px)
+   7. Small phones (<= 430px / 400px)
+   8. Short landscape / low height
+   9. Touch input
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. FOUNDATIONS
+   ------------------------------------------------------------ */
+:root{
+  --safe-top:env(safe-area-inset-top, 0px);
+  --safe-right:env(safe-area-inset-right, 0px);
+  --safe-bottom:env(safe-area-inset-bottom, 0px);
+  --safe-left:env(safe-area-inset-left, 0px);
+}
+
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
+
+img,svg,video,canvas{max-width:100%;}
+button,input,select,textarea{font-family:inherit;}
+button,a{-webkit-tap-highlight-color:transparent;}
+button{touch-action:manipulation;}
+#main,.topbar,.content-scroll{min-width:0;}
+
+#app{
+  height:100vh;
+  height:var(--app-vh, 100vh);
+  padding:calc(30px + var(--safe-top)) var(--safe-right) 0 var(--safe-left);
+}
+.book-reader:fullscreen{height:100dvh;}
+
+.mac-menubar{
+  height:calc(30px + var(--safe-top));
+  padding:var(--safe-top) calc(10px + var(--safe-right)) 0 calc(10px + var(--safe-left));
+  /* Dialogs must sit above the status bar; splash stays above everything. */
+  z-index:90;
+}
+
+#toast-stack{bottom:calc(20px + var(--safe-bottom));}
+.toast{max-width:calc(100vw - 24px); overflow-wrap:anywhere; text-align:left;}
+
+/* Real tap-blocking layer for the mobile drawer (created by js/responsive.js). */
+#sidebar-backdrop{
+  position:fixed; inset:0; z-index:84; background:rgba(4,8,6,.46);
+  opacity:0; pointer-events:none; transition:opacity 180ms ease;
+}
+#sidebar-backdrop.open{opacity:1; pointer-events:auto;}
+
+/* ------------------------------------------------------------
+   2. LARGE SCREENS
+   ------------------------------------------------------------ */
+@media (min-width:1800px){
+  .content-scroll{padding-inline:clamp(32px,3vw,64px);}
+  .content-scroll>*{max-width:1800px; margin-inline:auto;}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr));}
+  #settings-overlay .modal{
+    max-width:min(960px,92vw);
+    height:min(88dvh,900px); max-height:min(88dvh,900px);
+  }
+}
+
+@media (min-width:1600px){
+  #sidebar{width:248px;}
+  .quick-tools{width:380px; padding-inline:2px;}
+  .quick-tools-panel{padding-inline:16px;}
+  .topbar{padding-inline:36px;}
+  #clock-panel{--clock-dial-size:260px;}
+  .clock-analog-dial{width:min(260px,100%);}
+  .orbita-dial{width:min(260px,100%);}
+}
+
+@media (min-width:1200px) and (max-width:1599px){
+  .quick-tools{width:320px;}
+}
+
+/* ------------------------------------------------------------
+   3. SMALL LAPTOPS / TABLETS
+   ------------------------------------------------------------ */
+@media (min-width:861px) and (max-width:1180px){
+  #sidebar{width:196px;}
+  .quick-tools{width:300px;}
+  .topbar{gap:10px; padding-inline:16px;}
+  .topbar-title-wrap{min-width:88px;}
+  .topbar-title{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .topbar-sub{display:none;}
+  #sort-label{display:none;}
+  .sort-btn{padding:7px 9px;}
+  .search-wrap{min-width:140px;}
+  .content-scroll{padding:18px 18px 32px;}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(158px,1fr));}
+  .settings-panel{padding:18px;}
+}
+
+/* ------------------------------------------------------------
+   4. MOBILE SHELL  (<= 860px)
+   ------------------------------------------------------------ */
+@media (max-width:860px){
+  body{overscroll-behavior-y:contain;}
+
+  .mac-menubar{padding-inline:8px;}
+  .mac-menubar-brand span{display:none;}
+  .mac-search{width:min(180px,34vw);}
+  .mac-menubar-clock{min-width:0; font-size:10px;}
+  .auth-panel{padding-bottom:calc(16px + var(--safe-bottom));}
+
+  /* Drawer starts below the status bar and above app content. */
+  #sidebar{
+    position:fixed; top:calc(30px + var(--safe-top)); bottom:0; left:var(--safe-left);
+    height:auto; width:min(280px,86vw); z-index:85;
+    transform:translateX(-102%); box-shadow:none;
+    padding-bottom:var(--safe-bottom);
+  }
+  #sidebar.mobile-open{transform:translateX(0); box-shadow:0 18px 50px rgba(0,0,0,.45);}
+  #sidebar.collapsed{width:min(280px,86vw);}
+  .nav-item,.btn-add-tool,.collapse-toggle{min-height:44px;}
+
+  /* Search lives in the status bar; the topbar stays a single tidy row. */
+  .topbar{
+    display:grid; grid-template-columns:auto minmax(0,1fr) auto;
+    align-items:center; gap:8px; min-height:52px; padding:8px 12px;
+  }
+  .mobile-menu-btn{grid-column:1; grid-row:1; width:40px; height:40px;}
+  .topbar-title-wrap{grid-column:2; grid-row:1; min-width:0;}
+  .topbar-title{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:15px;}
+  .topbar-sub{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .topbar-controls{grid-column:3; grid-row:1; margin-left:0; gap:6px;}
+  .view-btn{width:36px; height:36px;}
+  .sort-btn{min-height:36px; padding:6px 10px;}
+  .sort-menu{min-width:min(190px,calc(100vw - 24px));}
+
+  /* Keep controls reachable while scrolled instead of blanking the bar. */
+  .topbar.scrolled{padding:5px 10px; min-height:44px;}
+  .topbar.scrolled .mobile-menu-btn{display:flex !important;}
+  .topbar.scrolled .topbar-title-wrap{display:block !important;}
+  .topbar.scrolled .topbar-controls{display:flex !important;}
+
+  .content-scroll{
+    padding:14px 12px calc(24px + var(--safe-bottom));
+    -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  }
+  .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px;}
+  .grid.compact-mode{grid-template-columns:repeat(auto-fill,minmax(66px,1fr)); gap:7px;}
+  .grid-card{padding:10px 22px 10px 10px;}
+  .grid-card .tool-icon{width:34px; height:34px;}
+  .compact-card{min-height:68px;}
+
+  /* Settings becomes a full-height sheet with wrapped navigation. */
+  #settings-overlay .modal{
+    width:calc(100% - 40px); height:calc(100dvh - 40px); max-height:none;
+    margin-block:0;
+  }
+  .settings-nav-item{min-height:40px;}
+  .settings-panel{padding:16px;}
+  .settings-row{gap:12px;}
+
+  /* Right rail stays reachable; its panel becomes a side sheet. */
+  .quick-tools-rail{width:58px;}
+  .quick-tools-tab{width:40px; height:40px;}
+  .quick-tools-panel{
+    top:calc(30px + var(--safe-top)); right:calc(58px + var(--safe-right));
+    width:min(360px, calc(100vw - 58px - var(--safe-right) - var(--safe-left)));
+    padding-bottom:calc(14px + var(--safe-bottom));
+  }
+
+  .feature-announcement{bottom:calc(12px + var(--safe-bottom));}
+}
+
+/* ------------------------------------------------------------
+   5. NARROW LAYOUT DETAILS  (<= 700px)
+   ------------------------------------------------------------ */
+@media (max-width:700px){
+  .book-reader-body{height:min(380px,52dvh); min-height:220px;}
+  .book-reader-header,.book-reader-footer{gap:6px; padding-block:8px;}
+  .book-reader-actions{gap:4px;}
+  .book-reader-actions #book-fullscreen-btn{display:none;}
+  .book-controls{flex-wrap:wrap; gap:8px;}
+  .book-controls button{flex:1 1 auto; min-width:0;}
+  .book-page-jump{order:3; flex:1 1 100%; justify-content:center;}
+  .book-fullscreen-footer{flex:0 0 34px;}
+}
+
+@media (max-width:680px){
+  .feature-announcement{
+    align-items:stretch; flex-direction:column; gap:10px;
+    padding:14px 40px 14px 14px;
+  }
+  .feature-announcement-actions{display:grid; grid-template-columns:1fr 1fr;}
+}
+
+/* ------------------------------------------------------------
+   6. PHONES  (<= 600px)
+   ------------------------------------------------------------ */
+@media (max-width:600px){
+  .mac-menubar-clock{display:none;}
+  .mac-search{width:min(150px,42vw);}
+  #mac-search-input,.auth-field input,.contact-card input,
+  .contact-card textarea,.contact-card select{font-size:16px;}
+
+  .topbar-title-wrap{display:none;}
+  .topbar.scrolled .topbar-title-wrap{display:none !important;}
+  .topbar-controls{justify-content:space-between; gap:8px;}
+  .topbar-controls .sort-wrap{flex:0 0 auto;}
+
+  .content-scroll{padding:12px 10px calc(22px + var(--safe-bottom));}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:9px;}
+  .grid.compact-mode{grid-template-columns:repeat(auto-fill,minmax(62px,1fr)); gap:6px;}
+  .grid-name{font-size:12.5px;}
+  .grid-desc{font-size:10.5px; min-height:26px;}
+  .list-card{height:66px; min-height:66px; padding-inline:12px;}
+  .list-cta{left:60px; right:12px;}
+
+  /* Workspace panel becomes a thumb-friendly bottom sheet. */
+  .quick-tools-panel{
+    left:var(--safe-left); right:var(--safe-right); top:auto; bottom:0; width:auto;
+    max-height:78dvh; border-left:0;
+    border-top:1px solid var(--border-med);
+    border-radius:18px 18px 0 0;
+    padding:14px 14px calc(14px + var(--safe-bottom));
+    box-shadow:0 -14px 40px rgba(0,0,0,.38);
+  }
+
+  /* Dialogs: full-width cards with stacked actions. */
+  .overlay{padding:12px;}
+  .modal,#settings-overlay .modal{max-height:calc(100dvh - 24px);}
+  #settings-overlay .modal{width:calc(100% - 24px); height:calc(100dvh - 24px);}
+  .modal-header,.modal-body,.modal-footer{padding-left:16px; padding-right:16px;}
+  .modal-footer{flex-wrap:wrap; justify-content:flex-start;}
+  .modal-footer .btn{flex:1 1 120px; min-height:44px;}
+  .modal-close{width:36px; height:36px;}
+  .field-input,.field-select,.field-textarea{min-height:44px; font-size:16px;}
+  .settings-panel{padding:14px;}
+  .settings-row{align-items:flex-start; flex-wrap:wrap;}
+
+  .book-reader-body{height:min(58dvh,520px);}
+  .book-reader-header,.book-reader-footer{padding-inline:12px;}
+  .book-reader-footer{padding-bottom:calc(14px + var(--safe-bottom));}
+
+  .feature-announcement{
+    left:10px; right:10px; bottom:calc(10px + var(--safe-bottom));
+    width:auto; transform:none; animation:none;
+  }
+}
+
+/* ------------------------------------------------------------
+   7. SMALL PHONES  (<= 430px / 400px)
+   ------------------------------------------------------------ */
+@media (max-width:430px){
+  .mac-menubar{padding-inline:6px;}
+  #mac-signout{font-size:0; width:24px; min-width:24px; padding:0;}
+  #mac-signout::before{content:"↪"; font-size:13px;}
+  .mac-menubar-clock{min-width:64px; font-size:9px; text-align:center; padding-left:4px;}
+  .mac-search{width:min(150px,40vw);}
+  .mac-menubar-actions button{padding:0 5px;}
+}
+
+@media (max-width:400px){
+  .topbar{padding-inline:10px;}
+  .mobile-menu-btn{width:34px; height:34px;}
+  .topbar-controls{gap:4px;}
+  #sort-label{display:none;}
+  .sort-btn{width:38px; justify-content:center; padding:0;}
+  .view-btn{width:32px; height:32px;}
+
+  .grid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:8px;}
+  .grid.compact-mode{grid-template-columns:repeat(auto-fill,minmax(58px,1fr)); gap:6px;}
+  .grid-card{grid-template-columns:30px minmax(0,1fr); column-gap:7px; padding:8px 20px 8px 8px;}
+  .grid-card .tool-icon{width:30px; height:30px;}
+  .list-card{height:62px; min-height:62px;}
+  .list-cta{left:56px;}
+
+  .settings-nav-item{flex-basis:calc(50% - 6px); min-width:0; overflow-wrap:anywhere;}
+  .settings-row{flex-direction:column; align-items:stretch;}
+  .settings-row>select,.settings-row>.theme-picker{align-self:stretch;}
+  .manage-row .m-cat{display:none;}
+  .update-check-row .btn{white-space:normal;}
+
+  .music-secondary-controls{flex-wrap:wrap;}
+  .music-secondary-controls label{flex:1 1 120px;}
+  .music-secondary-controls input{width:100%; max-width:100%;}
+  .music-library-controls select{flex:1 1 100%;}
+  .notes-composer{min-height:140px;}
+  .tasks-filters{flex-wrap:nowrap;}
+
+  .book-controls button{min-width:0; padding:8px; font-size:11px;}
+  .book-page-jump input{width:40px;}
+  .feature-announcement-actions{grid-template-columns:1fr;}
+  .feature-announcement-copy>span:last-child{
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+  }
+}
+
+/* ------------------------------------------------------------
+   8. SHORT LANDSCAPE / LOW HEIGHT
+   ------------------------------------------------------------ */
+@media (max-height:560px){
+  .auth-showcase{display:none;}
+  .auth-panel{padding-top:calc(56px + var(--safe-top)); padding-bottom:12px;}
+  .auth-card{max-height:none;}
+
+  .topbar{padding-block:6px;}
+  .content-scroll{padding-block:10px;}
+  .book-reader-body{height:calc(100dvh - 140px); min-height:180px;}
+  .book-reader-header,.book-reader-footer{padding-block:6px;}
+
+  .overlay{align-items:flex-start;}
+  .modal,#settings-overlay .modal{max-height:calc(100dvh - 24px);}
+  .modal-header{padding:10px 14px;}
+  .modal-body{padding:12px 14px;}
+  .modal-footer{padding:10px 14px; flex-wrap:wrap;}
+  .settings-nav{flex-direction:row; flex-wrap:nowrap; overflow-x:auto; padding:6px;}
+  .settings-nav-item{flex:0 0 auto; min-width:max-content;}
+  .settings-panel{padding:12px;}
+  .notes-composer{min-height:120px;}
+  .music-settings{max-height:42dvh;}
+
+  .feature-announcement{display:none;}
+  #clock-panel{--clock-dial-size:min(228px,38dvh);}
+  .clock-analog-dial{width:min(228px,100%,38dvh);}
+  .orbita-dial{width:min(240px,100%,40dvh);}
+  .clock-dial-stage{padding-block:4px;}
+  .clock-laps-box{max-height:80px;}
+}
+
+@media (max-width:860px) and (max-height:560px) and (orientation:landscape){
+  .topbar{grid-template-columns:auto minmax(0,1fr) auto; min-height:44px;}
+  .mobile-menu-btn{grid-column:1; grid-row:1;}
+  .topbar-title-wrap{display:none;}
+  .topbar-controls{grid-column:3; grid-row:1; justify-content:flex-end;}
+  .quick-tools-panel{max-height:calc(100dvh - 30px - var(--safe-top));}
+}
+
+@media (max-height:480px){
+  .auth-nav{top:8px; height:46px;}
+  .auth-nav-brand img{width:24px; height:24px;}
+  .auth-panel{padding:56px 12px 10px;}
+  .auth-brand{display:none;}
+  .auth-card{padding:14px 18px; max-height:calc(100dvh - 64px);}
+  .auth-card h1{font-size:22px;}
+  .auth-field{margin-bottom:8px;}
+  .auth-field input,.auth-actions button{height:40px;}
+  .auth-links{flex-direction:row; flex-wrap:wrap; justify-content:center;}
+  .public-page-nav{height:52px;}
+  .public-page-content{margin-top:24px;}
+}
+
+/* ------------------------------------------------------------
+   9. TOUCH INPUT
+   Comfortable targets, no hover-only affordances.
+   ------------------------------------------------------------ */
+@media (hover:none) and (pointer:coarse){
+  .quick-tools-tab::after{display:none;}
+  .mobile-menu-btn,.view-btn,.sort-btn,.modal-close,.search-clear,.nav-item,
+  .tasks-filter,.book-reader-icon-btn,.settings-nav-item{
+    min-width:40px; min-height:40px;
+  }
+  .book-zoom-group .book-reader-icon-btn{min-width:32px; min-height:32px;}
+  .task-action,.quick-note-delete{opacity:1; width:28px; height:28px;}
+  .music-controls button{width:34px; height:34px;}
+  .music-controls #music-play-pause{width:40px; height:40px;}
+  .music-library-song .music-song-action{width:30px; height:30px;}
+  .music-themes button{width:28px; height:28px;}
+  .tool-card{min-height:64px;}
+
+  .list-card:hover .list-info,
+  .list-card:focus .list-info,
+  .list-card:focus-visible .list-info{opacity:1; transform:none;}
+  .list-card:hover .tool-badge,
+  .list-card:focus .tool-badge,
+  .list-card:hover .fav-indicator,
+  .list-card:focus .fav-indicator{opacity:1;}
+
+  /* Fullscreen reader chrome must stay reachable without a mouse. */
+  .book-reader:fullscreen .book-reader-header,
+  .book-reader:fullscreen .book-reader-footer{
+    opacity:1; transform:none; pointer-events:auto;
+  }
+  .book-reader:fullscreen .book-reader-header{padding-top:calc(6px + var(--safe-top));}
+  .book-reader:fullscreen .book-reader-footer{padding-bottom:calc(8px + var(--safe-bottom));}
+}

@@ -23,7 +23,7 @@ async function showAuthenticatedApp(user){
   setCurrentUser(user);
   State.tools=[];
   State.categories=[];
-  State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click',clockTheme:'emerald',quickTools:undefined,notes:[],tasks:[]};
+  State.settings={theme:'dark',view:'grid',sort:'recent',lastBackupAt:null,landing:'auto',clickSound:'click',clockTheme:'emerald',quickTools:undefined,notes:[],tasks:[],updatedAt:0};
   showSplash('Restoring your workspace…');
   setLibraryLoading(true);
   document.getElementById('auth-screen').style.display='none';
@@ -34,6 +34,7 @@ async function showAuthenticatedApp(user){
   /* The cached library is already on screen. Cloud data is merged in the
      background so the short splash never sits idle waiting on network. */
   const refreshFromCloud = async () => {
+    const revisionBeforeSync = window.TOOLIFY_SETTINGS_REVISION || 0;
     try{
       await DB.syncForUser(user);
       if(currentUser?.id !== user.id) return;
@@ -43,7 +44,15 @@ async function showAuthenticatedApp(user){
       State.tools=tools;
       State.categories=categories;
       const saved=settingsRows.find(row=>row.key==='app');
-      if(saved) Object.assign(State.settings,saved.value);
+      if(saved){
+        /* If a note/task was added while the cloud snapshot was loading, keep
+           the newer local state and re-save it instead of overwriting it. */
+        if((window.TOOLIFY_SETTINGS_REVISION || 0) > revisionBeforeSync){
+          await persistSettings();
+        }else{
+          Object.assign(State.settings,saved.value);
+        }
+      }
       bookItems=books.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
       renderBooks();
       setLibraryLoading(false);
@@ -85,7 +94,7 @@ async function showAuthenticatedApp(user){
       return;
     }
     authMessage('We couldn\'t open your library right now. Please try again.',true);
-    document.getElementById('auth-screen').style.display='flex';
+    document.getElementById('auth-screen').style.display='';
     document.getElementById('app').style.display='none';
   }
 }
@@ -118,7 +127,7 @@ async function initAppData(){
 async function init(){
   if(!supabaseClient){
     cancelSplash();
-    document.getElementById('auth-screen').style.display='flex';
+    document.getElementById('auth-screen').style.display='';
     authMessage(navigator.onLine===false?OFFLINE_AUTH_MESSAGE:'Sign-in services are unavailable right now. Please refresh and try again.',true);
     return;
   }
@@ -127,7 +136,7 @@ async function init(){
   }catch(error){
     console.error('Could not open local database:',error);
     cancelSplash();
-    document.getElementById('auth-screen').style.display='flex';
+    document.getElementById('auth-screen').style.display='';
     authMessage('Local storage is unavailable. Enable site storage and refresh.',true);
     return;
   }
@@ -149,7 +158,7 @@ async function init(){
       authUrlProcessing=false;
       cancelSplash();
       document.getElementById('app').style.display='none';
-      document.getElementById('auth-screen').style.display='flex';
+      document.getElementById('auth-screen').style.display='';
       document.getElementById('password-reset-overlay').classList.add('open');
       document.getElementById('password-reset-new').focus();
       return;
@@ -161,7 +170,7 @@ async function init(){
       cancelSplash();
       if(currentUser){setCurrentUser(null);await DB.clearLocal();}
       document.getElementById('app').style.display='none';
-      document.getElementById('auth-screen').style.display='flex';
+      document.getElementById('auth-screen').style.display='';
       setAuthMode('login');
       return;
     }
@@ -179,7 +188,7 @@ async function init(){
           }
           if(!currentUser){
             await hideSplash();
-            document.getElementById('auth-screen').style.display='flex';
+            document.getElementById('auth-screen').style.display='';
             document.getElementById('app').style.display='none';
             setAuthMode('login');
           }
@@ -192,7 +201,7 @@ async function init(){
       recoveryActive=true;
       cancelSplash();
       document.getElementById('app').style.display='none';
-      document.getElementById('auth-screen').style.display='flex';
+      document.getElementById('auth-screen').style.display='';
       document.getElementById('password-reset-overlay').classList.add('open');
       document.getElementById('password-reset-new').focus();
     }else{
@@ -200,7 +209,7 @@ async function init(){
     }
   }else if(!authUrlProcessing){
     await hideSplash();
-    document.getElementById('auth-screen').style.display='flex';
+    document.getElementById('auth-screen').style.display='';
     document.getElementById('app').style.display='none';
   }
 }
@@ -237,7 +246,7 @@ async function signOut(){
   cancelSplash();
   setCurrentUser(null);
   document.getElementById('app').style.display='none';
-  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('auth-screen').style.display='';
   setAuthMode('login');
   const signOutPromise=supabaseClient.auth.signOut({scope:'global'});
   DB.clearLocal().catch(()=>{});
@@ -426,6 +435,6 @@ if('serviceWorker' in navigator){
 init().catch(error=>{
   console.error('Toolify startup failed:',error);
   cancelSplash();
-  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('auth-screen').style.display='';
   authMessage(isOfflineError(error)?OFFLINE_AUTH_MESSAGE:(error?.message || 'Could not start Toolify.'),true);
 });

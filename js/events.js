@@ -172,7 +172,7 @@ function wireEvents(){
     notesList().push({id:uid(), text, createdAt:Date.now()});
     input.value='';
     renderQuickNotes();
-    persistSettingsFast();
+    await persistSettings();
   });
   renderQuickNotes();
 
@@ -187,7 +187,7 @@ function wireEvents(){
     taskInput.value = '';
     renderQuickTasks();
     taskInput.focus();
-    persistSettingsFast();
+    await persistSettings();
   });
   taskList.addEventListener('click', async (event)=>{
     const toggle = event.target.closest('[data-task-toggle]');
@@ -199,11 +199,11 @@ function wireEvents(){
       task.done = !task.done;
       task.completedAt = task.done ? Date.now() : null;
       renderQuickTasks();
-      persistSettingsFast();
+      await persistSettings();
     }else if(remove){
       State.settings.tasks = tasksList().filter(entry=>entry.id !== remove.dataset.taskDelete);
       renderQuickTasks();
-      persistSettingsFast();
+      await persistSettings();
     }else if(edit && !taskList.querySelector('.task-edit-input')){
       beginTaskEdit(edit.dataset.taskEdit);
     }
@@ -227,13 +227,13 @@ function wireEvents(){
     const now = Date.now();
     tasks.forEach(task=>{ if(!task.done){ task.done = true; task.completedAt = now; } });
     renderQuickTasks();
-    persistSettingsFast();
+    await persistSettings();
   });
-  document.getElementById('tasks-clear-done').addEventListener('click', ()=>{
+  document.getElementById('tasks-clear-done').addEventListener('click', async ()=>{
     if(!tasksList().some(task=>task.done)) return;
     State.settings.tasks = tasksList().filter(task=>!task.done);
     renderQuickTasks();
-    persistSettingsFast();
+    await persistSettings();
   });
   renderQuickTasks();
 
@@ -262,8 +262,9 @@ function wireEvents(){
   });
 
   // Sidebar collapse
+  const mobileMax = ()=> window.TOOLIFY_MOBILE_MAX || 860;
   document.getElementById('btn-collapse').addEventListener('click', ()=>{
-    if(window.innerWidth <= 860){ closeMobileSidebar(); return; }
+    if(window.innerWidth <= mobileMax()){ closeMobileSidebar(); return; }
     document.getElementById('sidebar').classList.toggle('collapsed');
   });
   document.getElementById('btn-mobile-menu').addEventListener('click', ()=>{
@@ -273,12 +274,15 @@ function wireEvents(){
   // Swipe gestures (mobile): right swipe opens sidebar, left swipe closes
   let _swipeStartX = 0, _swipeStartY = 0;
   document.addEventListener('touchstart', (e)=>{
+    if(window.innerWidth > mobileMax()) return;
     if(!e.touches || e.touches.length !== 1) return;
     _swipeStartX = e.touches[0].clientX;
     _swipeStartY = e.touches[0].clientY;
   }, {passive:true});
   document.addEventListener('touchend', (e)=>{
+    if(window.innerWidth > mobileMax()) return;
     if(!e.changedTouches || e.changedTouches.length !== 1) return;
+    if(e.target.closest?.('input, textarea, select, [contenteditable], .quick-tools-panel, .overlay.open')) return;
     const dx = e.changedTouches[0].clientX - _swipeStartX;
     const dy = e.changedTouches[0].clientY - _swipeStartY;
     if(Math.abs(dx) < 60 || Math.abs(dy) > 60) return;
@@ -293,7 +297,7 @@ function wireEvents(){
   if(contentScroll && topbar){
     let lastScrollTop = 0;
     const onScroll = ()=>{
-      if(window.innerWidth > 860){ topbar.classList.remove('scrolled'); return; }
+      if(window.innerWidth > mobileMax()){ topbar.classList.remove('scrolled'); return; }
       const st = contentScroll.scrollTop;
       if(st > 40 && st > lastScrollTop){
         topbar.classList.add('scrolled');
@@ -307,7 +311,7 @@ function wireEvents(){
       lastScrollTop = st <= 0 ? 0 : st;
     };
     contentScroll.addEventListener('scroll', onScroll, {passive:true});
-    window.addEventListener('resize', ()=>{ if(window.innerWidth > 860) topbar.classList.remove('scrolled'); });
+    window.addEventListener('resize', ()=>{ if(window.innerWidth > mobileMax()) topbar.classList.remove('scrolled'); });
   }
 
   // Keyboard shortcuts
