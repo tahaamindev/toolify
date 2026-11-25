@@ -1795,8 +1795,8 @@ html[data-theme="light"] .orbita-date{color:#8b918b;}
 }
 
 /* ============================================================
-   LOADING SCREEN — from loader.html (white reveal wipe + chime),
-   retimed so the app opens after a short flash.
+   LOADING SCREEN — minimal: wordmark + thin progress line.
+   No logo image, float animation, ground shadow or sound.
    ============================================================ */
 /* Boot class is applied in <head>, so the loader is visible from first paint. */
 html.toolify-booting, html.toolify-booting body{overflow:hidden;}
@@ -1808,47 +1808,23 @@ html.toolify-booting, html.toolify-booting body{overflow:hidden;}
   --accent:#12a150;
   position:fixed; inset:0; z-index:9999;
   background:#fff; color:#0d3b20;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:44px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
   font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   contain:layout paint style;
-  transition:opacity .17s ease, visibility .17s ease;
+  transition:opacity .12s ease, visibility .12s ease;
 }
 #splash-screen.out{opacity:0; visibility:hidden;}
-#splash-screen .mark{
-  position:relative; width:clamp(110px,24vmin,160px); aspect-ratio:1;
-  transition:transform .17s cubic-bezier(.6,0,.2,1), opacity .17s ease;
-}
-#splash-screen.out .mark{transform:scale(1.12); opacity:0;}
-#splash-screen .mark img{
-  width:100%; height:100%; object-fit:contain; display:block;
-  clip-path:polygon(0 100%, 0 100%, 0 100%, 0 100%);
-  opacity:0; transform:scale(.92); filter:blur(8px);
-  animation:splash-reveal .38s cubic-bezier(.22,1,.36,1) 0s forwards,
-            splash-float 4s ease-in-out .6s infinite;
-}
-#splash-screen .mark::after{                       /* soft ground shadow */
-  content:""; position:absolute; left:15%; right:15%; bottom:-26px; height:14px; border-radius:50%;
-  background:radial-gradient(ellipse, rgba(18,161,80,.28), transparent 70%);
-  opacity:0; animation:splash-shadow-in .25s ease .18s forwards,
-                       splash-shadow 4s ease-in-out .6s infinite;
+#splash-screen .splash-word{
+  font-size:13px; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+  opacity:.78;
 }
 #splash-screen .line{
-  width:120px; height:2px; background:#e4efe8; border-radius:2px; overflow:hidden;
-  opacity:0; animation:splash-line-in .2s ease .05s forwards;
+  width:min(150px, 42vw); height:2px; background:#e4efe8; border-radius:2px; overflow:hidden;
 }
 #splash-screen .line span{
   display:block; height:100%; width:100%; background:var(--accent);
   transform-origin:left; transform:scaleX(0);
 }
-@keyframes splash-reveal{     /* diagonal wipe, arrow ki direction me */
-  0%   { clip-path:polygon(0 100%, 0 100%, 0 100%, 0 100%); opacity:0; transform:scale(.92); filter:blur(8px); }
-  30%  { opacity:1; }
-  100% { clip-path:polygon(0 0, 200% 0, 200% 200%, 0 200%); opacity:1; transform:scale(1); filter:blur(0); }
-}
-@keyframes splash-float{0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);}}
-@keyframes splash-shadow{0%,100%{transform:scaleX(1); opacity:1;} 50%{transform:scaleX(.8); opacity:.6;}}
-@keyframes splash-shadow-in{to{opacity:1;}}
-@keyframes splash-line-in{to{opacity:1;}}
 @media(prefers-reduced-motion:reduce){
   #splash-screen,#splash-screen *,#splash-screen *::before,#splash-screen *::after{
     animation-duration:.01ms !important; animation-iteration-count:1 !important; transition:none !important;

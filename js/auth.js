@@ -166,9 +166,20 @@ async function init(){
     if(recoveryActive || authUrlProcessing) return;
     if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'){if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}return;}
     if(event==='SIGNED_OUT'){
+      /* Supabase can emit SIGNED_OUT during a token refresh blip. Retry once
+         before showing login, and never wipe the local library unless the
+         user pressed Sign out. */
+      const wasManual = manualSignOut;
       manualSignOut=false;
       cancelSplash();
-      if(currentUser){setCurrentUser(null);await DB.clearLocal();}
+      if(!wasManual){
+        const retried = await supabaseClient.auth.getSession().catch(()=>({data:{session:null}}));
+        if(retried.data?.session?.user && !currentUser){
+          await showAuthenticatedApp(retried.data.session.user);
+          return;
+        }
+      }
+      if(currentUser){setCurrentUser(null); if(wasManual) await DB.clearLocal();}
       document.getElementById('app').style.display='none';
       document.getElementById('auth-screen').style.display='';
       setAuthMode('login');
@@ -176,6 +187,18 @@ async function init(){
     }
     if(session?.user&&!currentUser){await showAuthenticatedApp(session.user);}
   });
+  /* Keep the saved session fresh when a tab or the device wakes up, so the
+     app does not drop back to the login screen on every reopen. */
+  const refreshSavedSession = ()=>{
+    if(!supabaseClient) return;
+    void supabaseClient.auth.refreshSession().then(({data})=>{
+      if(data?.session?.user && !currentUser) return showAuthenticatedApp(data.session.user);
+    }).catch(()=>{});
+  };
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible') refreshSavedSession();
+  });
+  window.addEventListener('online',refreshSavedSession);
   const {data:{session}}=await supabaseClient.auth.getSession();
   if(authUrlProcessing){
     window.setTimeout(()=>{

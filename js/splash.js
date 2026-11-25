@@ -1,16 +1,14 @@
 /* ============================================================
-   TOOLIFY — Loading screen from loader.html
-   Same white reveal wipe, logo float, ground shadow, progress bar
-   and soft chime. The loader stays visible for a full 2 seconds
-   so the first cloud sync can settle before the app is revealed.
+   TOOLIFY — Minimal loading screen
+   Wordmark + thin progress bar only. No image, float, shadow or
+   sound. Stays for 2 seconds so the first cloud sync can settle.
    `window.hideLoader()` / `window.Loader.done()` kept as APIs.
    ============================================================ */
 
 const SPLASH_MIN_MS = 2000;
 const SPLASH_MAX_MS = 2000;
-const SPLASH_FINISH_DELAY_MS = 30;
-const SPLASH_OUT_MS = 170;
-const SPLASH_SOUND = true;
+const SPLASH_FINISH_DELAY_MS = 0;
+const SPLASH_OUT_MS = 120;
 
 let splashShownAt = 0;
 let splashHideTask = null;
@@ -21,7 +19,6 @@ let splashFinished = false;
 let splashProgress = 0;
 let splashLastFrame = 0;
 let splashFrame = null;
-let splashAudio = null;
 
 function splashElement(){
   return document.getElementById('splash-screen');
@@ -35,40 +32,7 @@ function splashExitMs(){
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : SPLASH_OUT_MS;
 }
 
-/* ---- soft chime (browser me pehle tap ke baad chalti hai) ---- */
-function splashChime(){
-  if(!SPLASH_SOUND) return;
-  try{
-    splashAudio = splashAudio || new (window.AudioContext || window.webkitAudioContext)();
-    if(splashAudio.state !== 'running') return;
-    [659.25, 987.77].forEach((frequency, index) => {
-      const time = splashAudio.currentTime + index * .12;
-      const oscillator = splashAudio.createOscillator();
-      const gain = splashAudio.createGain();
-      oscillator.type = 'sine';
-      oscillator.frequency.value = frequency;
-      gain.gain.setValueAtTime(.0001, time);
-      gain.gain.exponentialRampToValueAtTime(.12, time + .02);
-      gain.gain.exponentialRampToValueAtTime(.0001, time + 1.3);
-      oscillator.connect(gain);
-      gain.connect(splashAudio.destination);
-      oscillator.start(time);
-      oscillator.stop(time + 1.4);
-    });
-  }catch(error){ /* audio is optional */ }
-}
-
-function unlockSplashAudio(){
-  try{
-    splashAudio = splashAudio || new (window.AudioContext || window.webkitAudioContext)();
-    splashAudio.resume();
-  }catch(error){ /* audio is optional */ }
-}
-
-window.addEventListener('pointerdown', unlockSplashAudio, { once:true, passive:true });
-window.addEventListener('keydown', unlockSplashAudio, { once:true });
-
-/* ---- smooth progress, copied from loader.html and sped up ---- */
+/* ---- smooth progress ---- */
 function stopSplashFrame(){
   if(splashFrame){
     window.cancelAnimationFrame(splashFrame);
@@ -167,7 +131,6 @@ async function splashFinish(){
   splashFinished = true;
   stopSplashFrame();
   clearSplashCap();
-  splashChime();
 
   const screen = splashElement();
   if(!screen || screen.hidden){
