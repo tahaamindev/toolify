@@ -104,17 +104,6 @@ function toast(msg, type, duration=2600){
   }, duration);
 }
 
-function showFeatureAnnouncement(){
-  const announcement = document.getElementById('feature-announcement');
-  if(announcement) announcement.hidden=false;
-}
-
-function dismissFeatureAnnouncement(){
-  const announcement=document.getElementById('feature-announcement');
-  if(announcement) announcement.hidden=true;
-}
-
-
 /* ============================================================
    18. THEME
    ============================================================ */

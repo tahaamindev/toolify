@@ -47,15 +47,6 @@ function wireEvents(){
   document.getElementById('mac-settings').addEventListener('click', ()=>openSettings('general'));
   document.getElementById('mac-about').addEventListener('click', showPublicAbout);
   document.getElementById('mac-contact').addEventListener('click', showPublicContact);
-  document.getElementById('feature-announcement-dismiss').addEventListener('click',dismissFeatureAnnouncement);
-  document.getElementById('feature-tasks-button')?.addEventListener('click',()=>{
-    setRightPanel('tasks',true);
-    dismissFeatureAnnouncement();
-  });
-  document.getElementById('feature-clock-button')?.addEventListener('click',()=>{
-    setRightPanel('clock',true);
-    dismissFeatureAnnouncement();
-  });
   document.querySelectorAll('.quick-tools-tab').forEach(button=>{
     button.addEventListener('click', ()=>setRightPanel(button.dataset.rightPanel));
   });

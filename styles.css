@@ -1405,34 +1405,6 @@ html[data-theme="light"][data-palette]{
   .music-controls button{width:25px;}
 }
 #main{position:relative;}
-.feature-announcement{
-  position:absolute;z-index:65;left:50%;bottom:16px;display:flex;align-items:center;justify-content:space-between;
-  gap:16px;width:min(590px,calc(100% - 32px));padding:16px 42px 16px 18px;
-  transform:translateX(-50%);border:1px solid color-mix(in srgb,var(--accent) 32%,var(--border-med));
-  border-radius:14px;background:color-mix(in srgb,var(--bg-elev-1) 93%,var(--accent));
-  box-shadow:0 16px 42px rgba(0,0,0,.32);backdrop-filter:blur(16px);animation:feature-in 220ms var(--ease);
-}
-.feature-announcement[hidden]{display:none!important;}
-.feature-announcement-copy{display:flex;min-width:0;flex-direction:column;gap:3px;}
-.feature-announcement-eyebrow{color:var(--accent);font-size:9px;font-weight:750;letter-spacing:.11em;}
-.feature-announcement-copy strong{color:var(--text-primary);font-size:14px;line-height:1.35;}
-.feature-announcement-copy>span:last-child{color:var(--text-secondary);font-size:11px;line-height:1.45;}
-.feature-announcement-actions{display:flex;flex-shrink:0;gap:7px;}
-.feature-announcement-actions button{
-  min-height:34px;padding:0 11px;border:1px solid var(--border-med);border-radius:8px;
-  background:var(--bg-elev-2);color:var(--text-secondary);font-size:10px;font-weight:650;white-space:nowrap;
-}
-.feature-announcement-actions button:hover{border-color:var(--accent);color:var(--accent);}
-.feature-announcement-actions .feature-action-primary{border-color:transparent;background:var(--accent-strong);color:#08150f;}
-.feature-announcement-actions .feature-action-primary:hover{filter:brightness(1.08);color:#08150f;}
-.feature-announcement-dismiss{position:absolute;top:7px;right:7px;width:24px;height:24px;border:0;border-radius:6px;background:transparent;color:var(--text-tertiary);font-size:18px;line-height:1;}
-.feature-announcement-dismiss:hover{background:var(--bg-elev-3);color:var(--text-primary);}
-@keyframes feature-in{from{opacity:0;transform:translate(-50%,8px);}to{opacity:1;transform:translate(-50%,0);}}
-@media (max-width:680px){
-  .feature-announcement{bottom:12px;align-items:stretch;flex-direction:column;gap:10px;padding:14px 40px 14px 14px;}
-  .feature-announcement-actions{display:grid;grid-template-columns:1fr 1fr;}
-  .feature-announcement-actions button{padding-inline:6px;font-size:9px;}
-}
 
 /* ============================================================
    CLOCK / STOPWATCH / TIMER (right sidebar panel)
@@ -1795,8 +1767,7 @@ html[data-theme="light"] .orbita-date{color:#8b918b;}
 }
 
 /* ============================================================
-   LOADING SCREEN — minimal: wordmark + thin progress line.
-   No logo image, float animation, ground shadow or sound.
+   LOADING SCREEN — exact pill loader, color follows theme.
    ============================================================ */
 /* Boot class is applied in <head>, so the loader is visible from first paint. */
 html.toolify-booting, html.toolify-booting body{overflow:hidden;}
@@ -1805,25 +1776,36 @@ html.toolify-booting, html.toolify-booting body{overflow:hidden;}
 #splash-screen[hidden]{display:none !important;}
 
 #splash-screen{
-  --accent:#12a150;
   position:fixed; inset:0; z-index:9999;
-  background:#fff; color:#0d3b20;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+  background:var(--bg); color:var(--accent);
+  display:flex; align-items:center; justify-content:center;
   font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   contain:layout paint style;
   transition:opacity .12s ease, visibility .12s ease;
 }
 #splash-screen.out{opacity:0; visibility:hidden;}
-#splash-screen .splash-word{
-  font-size:13px; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
-  opacity:.78;
+#splash-screen .loader{
+  width:120px;
+  height:22px;
+  border-radius:40px;
+  color:var(--accent);
+  border:2px solid;
+  position:relative;
 }
-#splash-screen .line{
-  width:min(150px, 42vw); height:2px; background:#e4efe8; border-radius:2px; overflow:hidden;
+#splash-screen .loader::before{
+  content:"";
+  position:absolute;
+  margin:2px;
+  width:25%;
+  top:0;
+  bottom:0;
+  left:0;
+  border-radius:inherit;
+  background:currentColor;
+  animation:l3 1s infinite linear;
 }
-#splash-screen .line span{
-  display:block; height:100%; width:100%; background:var(--accent);
-  transform-origin:left; transform:scaleX(0);
+@keyframes l3{
+  50% {left:100%; transform:translateX(calc(-100% - 4px));}
 }
 @media(prefers-reduced-motion:reduce){
   #splash-screen,#splash-screen *,#splash-screen *::before,#splash-screen *::after{

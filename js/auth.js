@@ -78,11 +78,10 @@ async function showAuthenticatedApp(user){
   try{
     await DB.open();
     await initAppData();
-    showFeatureAnnouncement();
     setLibraryLoading(false);
     applyTheme();
     render();
-    void refreshFromCloud();
+    await refreshFromCloud();
     await hideSplash();
   }catch(error){
     cancelSplash();
