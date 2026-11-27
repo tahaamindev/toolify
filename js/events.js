@@ -50,67 +50,8 @@ function wireEvents(){
   document.querySelectorAll('.quick-tools-tab').forEach(button=>{
     button.addEventListener('click', ()=>setRightPanel(button.dataset.rightPanel));
   });
-  document.querySelectorAll('[data-music-action]').forEach(button=>{
-    button.addEventListener('click',()=>{
-      const action=button.dataset.musicAction;
-      if(action==='add') showMusicForm('add');
-      if(action==='cancel-form') showMusicForm('');
-    });
-  });
-  document.getElementById('music-file-input').addEventListener('change',event=>{
-    loadMusicFiles(event.currentTarget.files);
-    event.currentTarget.value='';
-  });
-  document.getElementById('music-folder-input').addEventListener('change',event=>{
-    loadMusicFiles(event.currentTarget.files);
-    event.currentTarget.value='';
-  });
-  document.getElementById('music-save-song').addEventListener('click',saveMusicSong);
-  document.getElementById('music-search').addEventListener('input',renderMusicLibrary);
-  document.getElementById('music-previous').addEventListener('click',()=>advanceMusic(-1,true));
-  document.getElementById('music-next').addEventListener('click',()=>advanceMusic(1,true));
-  document.getElementById('music-play-pause').addEventListener('click',toggleMusicPlayback);
-  document.getElementById('music-stop').addEventListener('click',stopMusicPlayback);
-  document.getElementById('music-video-toggle').addEventListener('click',toggleMusicVideo);
-  document.getElementById('music-volume').addEventListener('input',event=>setMusicVolume(Number(event.currentTarget.value)));
-  document.getElementById('music-volume').addEventListener('change',()=>saveMusicState().catch(error=>musicPersistenceError(error)));
-  document.getElementById('music-seek').addEventListener('input',event=>{
-    const track=findMusicTrack(musicQueue[currentMusicTrack]);
-    const fraction=Number(event.currentTarget.value)/1000;
-    if(track?.youtubeId){
-      if(musicYoutubeReady){
-        const duration=musicYoutubePlayer.getDuration();
-        if(duration) musicYoutubePlayer.seekTo(duration*fraction,true);
-      }
-    }else{
-      const player=getMusicPlayerElement();
-      if(player?.duration) player.currentTime=player.duration*fraction;
-    }
-  });
-  [document.getElementById('music-audio'),document.getElementById('music-video')].forEach(player=>{
-    player.addEventListener('ended',()=>advanceMusic());
-    player.addEventListener('timeupdate',()=>updateMusicProgress(player.currentTime,player.duration));
-    player.addEventListener('play',()=>{document.getElementById('music-playback-state').textContent='PLAYING';updateMusicControls();startMusicProgressTimer();});
-    player.addEventListener('pause',()=>{document.getElementById('music-playback-state').textContent='PAUSED';updateMusicControls();});
-    player.addEventListener('loadedmetadata',()=>updateMusicProgress(0,player.duration));
-  });
-  document.addEventListener('keydown',event=>{
-    if(event.key==='Escape'){
-      if(!document.getElementById('music-song-form').hidden){showMusicForm('');return;}
-    }
-    if(document.getElementById('music-player').hidden||document.querySelector('.overlay.open')) return;
-    if(event.target.matches('input,textarea,select,[contenteditable="true"]')) return;
-    if(event.code==='Space'){event.preventDefault();toggleMusicPlayback();}
-    else if(event.key==='ArrowUp'){event.preventDefault();setMusicVolume(Math.min(100,Number(getMusicSettings().volume??75)+5));saveMusicState().catch(error=>musicPersistenceError(error));}
-    else if(event.key==='ArrowDown'){event.preventDefault();setMusicVolume(Math.max(0,Number(getMusicSettings().volume??75)-5));saveMusicState().catch(error=>musicPersistenceError(error));}
-    else if(event.key==='ArrowRight') seekMusicBy(5);
-    else if(event.key==='ArrowLeft') seekMusicBy(-5);
-  });
-  window.addEventListener('beforeunload', ()=>{
-    musicTracks.forEach(track=>{
-      if(track.url) URL.revokeObjectURL(track.url);
-    });
-  });
+  /* T Music owns all player markup and shortcuts (js/tmusic/*). */
+  if(window.TM && TM.events) TM.events.wire();
   document.getElementById('settings-close').addEventListener('click', ()=>document.getElementById('settings-overlay').classList.remove('open'));
   document.getElementById('settings-overlay').addEventListener('click', (e)=>{ if(e.target.id==='settings-overlay') document.getElementById('settings-overlay').classList.remove('open'); });
   document.querySelectorAll('.settings-nav-item').forEach(b=>b.addEventListener('click', ()=>renderSettingsPanel(b.dataset.panel)));

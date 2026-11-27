@@ -6,6 +6,13 @@
 <script>
   window.TOOLIFY_BOOT_AT = performance.now();
   document.documentElement.classList.add('toolify-booting');
+  /* Desktop-only app: tag touch/mobile devices before first paint so the
+     block screen appears instantly (CSS handles narrow windows on its own). */
+  try{
+    const coarsePointer = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    const mobileAgent = /Android|iPhone|iPad|iPod|Mobile|Windows Phone|BlackBerry/i.test(navigator.userAgent || '');
+    if(coarsePointer || mobileAgent) document.documentElement.classList.add('toolify-mobile-device');
+  }catch(error){ /* matching is best-effort; the CSS breakpoint still applies */ }
 </script>
 <link rel="icon" href="logo.png?v=3" sizes="any">
 <link rel="apple-touch-icon" href="logo.png?v=3">
@@ -15,8 +22,9 @@
 <link rel="preconnect" href="https://ihlqghvdfunsfdnlaoks.supabase.co" crossorigin>
 <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-<link rel="stylesheet" href="styles.css?v=52">
-<link rel="stylesheet" href="responsive.css?v=52">
+<link rel="stylesheet" href="styles.css?v=54">
+<link rel="stylesheet" href="responsive.css?v=54">
+<link rel="stylesheet" href="tmusic.css?v=54">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -29,6 +37,23 @@
    sync so the controller can measure the full minimum duration. */
 document.getElementById('splash-screen').hidden = false;
 </script>
+
+<!-- ============ DESKTOP-ONLY GATE ============ -->
+<div id="desktop-only-gate" class="desktop-only-gate" role="alertdialog" aria-modal="true" aria-labelledby="desktop-gate-title" aria-describedby="desktop-gate-message" tabindex="-1">
+  <div class="desktop-gate-card">
+    <div class="desktop-gate-icon" aria-hidden="true">
+      <svg viewBox="0 0 64 64" fill="none">
+        <rect x="7" y="11" width="42" height="30" rx="3.5" stroke="currentColor" stroke-width="3"/>
+        <path d="M21 49h14M28 41v8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="46" cy="43" r="12" fill="var(--bg-elev-2, #1d211f)" stroke="currentColor" stroke-width="3"/>
+        <path d="M42.5 39.5l7 7m0-7l-7 7" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="desktop-gate-brand">TOOLIFY</div>
+    <h1 id="desktop-gate-title">Desktop experience only</h1>
+    <p id="desktop-gate-message">TOOLIFY is designed exclusively for desktop users and is not supported on mobile phones or smaller screens. Please open it on your laptop or PC for the best experience.</p>
+  </div>
+</div>
 
 <section id="auth-screen">
   <nav class="auth-nav" aria-label="Toolify navigation">
@@ -231,48 +256,85 @@ document.getElementById('splash-screen').hidden = false;
         <div class="workspace-hint">Keep your favorite tools close, and use Notes or Music whenever you need them.</div>
       </section>
       <section class="music-player" id="music-player" aria-label="Music player" hidden>
-        <div class="music-player-top">
-          <div class="music-player-title">Music</div>
-          <button class="music-add-toggle" type="button" data-music-action="add" title="Add music" aria-label="Add music" aria-expanded="false" aria-controls="music-song-form">＋</button>
-        </div>
-        <div class="music-controls-bar" aria-label="Music controls">
-          <div class="music-current-meta">
-            <div class="music-now-playing" id="music-now-playing" aria-live="polite">Nothing playing</div>
-            <div class="music-current-artist" id="music-current-artist">Choose a song</div>
+        <div class="tm-app" id="tm-app" data-tm-theme="silver">
+          <header class="tm-top">
+            <div class="tm-brand">
+              <div class="tm-logo">♫</div>
+              <div><div class="tm-brand-title">T Music</div><div class="tm-brand-sub">Your personal sound space</div></div>
+            </div>
+            <div class="tm-top-actions">
+              <button type="button" class="tm-btn" data-tm-action="settings" title="Settings" aria-label="Settings">⚙</button>
+              <button type="button" class="tm-btn" data-tm-action="bulk" title="Bulk Add" aria-label="Bulk Add">☰</button>
+              <button type="button" class="tm-btn primary" data-tm-action="add" title="Add Song" aria-label="Add Song">＋</button>
+            </div>
+          </header>
+
+          <div class="tm-banner hide" id="tm-banner"><button type="button" class="tm-btn" id="tm-banner-close">Got it</button><b>⚠ One quick setup step for playback.</b> Open Toolify from a web address (localhost or hosting) instead of a plain file so YouTube allows playback.</div>
+
+          <nav class="tm-nav" aria-label="Music views">
+            <button type="button" class="active" data-tm-view="home">⌂ Dashboard</button>
+            <button type="button" data-tm-view="all">♫ All Songs <span id="tm-all-count">0</span></button>
+            <button type="button" data-tm-view="favorites">♡ Favorites <span id="tm-fav-count">0</span></button>
+          </nav>
+          <div class="tm-playlists" id="tm-playlists"></div>
+
+          <div class="tm-welcome">
+            <div><h2 id="tm-view-title">Good music. Good mood.</h2><p id="tm-view-subtitle">Your personal collection, ready when you are.</p></div>
+            <input class="tm-search" id="tm-search" type="search" placeholder="⌕  Search your music…" aria-label="Search your music">
           </div>
-          <div class="music-progress"><span id="music-time-current">0:00</span><input id="music-seek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span id="music-time-total">0:00</span></div>
-          <div class="music-controls">
-            <button type="button" id="music-previous" title="Previous" aria-label="Previous">|◀</button>
-            <button type="button" id="music-play-pause" title="Play" aria-label="Play">▶</button>
-            <button type="button" id="music-next" title="Next" aria-label="Next">▶|</button>
-            <button type="button" id="music-stop" title="Stop" aria-label="Stop">■</button>
-            <button type="button" id="music-video-toggle" title="Show video" aria-label="Show video" aria-pressed="false">▣</button>
-          </div>
-          <label class="music-volume-control" aria-label="Volume">🔊<input type="range" id="music-volume" min="0" max="100" value="75" aria-label="Volume"></label>
-          <span class="music-playback-state" id="music-playback-state" aria-live="polite">READY</span>
+
+          <section class="tm-card tm-player-card" aria-label="Now playing">
+            <div class="tm-player-head"><span>NOW PLAYING</span><span class="tm-status" id="tm-status">READY</span></div>
+            <div class="tm-video" id="tm-video">
+              <div id="tm-youtube-wrap"><div id="tm-youtube-player"></div></div>
+              <div class="tm-stage">
+                <div class="tm-disc">♫<img id="tm-art" alt="" hidden></div>
+                <div class="tm-stage-copy"><div class="tm-bars"><i></i><i></i><i></i><i></i><i></i></div><div id="tm-stage-text">Add a YouTube link, then press play.</div></div>
+              </div>
+            </div>
+            <div class="tm-track">
+              <div class="tm-cover" id="tm-now-cover">♫</div>
+              <div class="tm-track-copy"><b id="tm-now-title">Nothing playing yet</b><span id="tm-now-artist">Choose a song to begin</span></div>
+              <span id="tm-time-label">--:--</span>
+            </div>
+            <div class="tm-progress-row"><span id="tm-elapsed">0:00</span><input id="tm-progress" type="range" min="0" max="1000" value="0" aria-label="Seek"><span id="tm-duration">0:00</span></div>
+            <div class="tm-controls">
+              <button type="button" id="tm-shuffle" title="Shuffle" aria-label="Shuffle">⤨</button>
+              <button type="button" id="tm-prev" title="Previous" aria-label="Previous">|◀</button>
+              <button type="button" class="main" id="tm-toggle" title="Play or pause" aria-label="Play or pause">▶</button>
+              <button type="button" id="tm-next" title="Next" aria-label="Next">▶|</button>
+              <button type="button" id="tm-repeat" title="Repeat current song" aria-label="Repeat">↻</button>
+              <button type="button" id="tm-vid-toggle" title="Show / hide video" aria-label="Show or hide video">▣</button>
+              <span class="spacer"></span>
+              <button type="button" id="tm-mute" title="Mute / unmute" aria-label="Mute or unmute">🔊</button>
+              <button type="button" id="tm-eq-open" title="Open equalizer" aria-label="Open equalizer">☷</button>
+              <input id="tm-volume" type="range" min="0" max="100" value="75" aria-label="Volume" title="Volume">
+              <select id="tm-speed" aria-label="Playback speed" title="Playback speed">
+                <option value=".5">0.5×</option><option value=".75">0.75×</option><option value="1" selected>1×</option>
+                <option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="1.75">1.75×</option><option value="2">2×</option>
+              </select>
+            </div>
+          </section>
+
+          <section class="tm-card tm-queue-card" aria-label="Song list">
+            <div class="tm-queue-head">
+              <div>
+                <h3 id="tm-list-title">Up Next</h3>
+                <p id="tm-list-desc">Drag songs to change what plays next.</p>
+                <div class="tm-mini"><span>♫ <b id="tm-stat-songs">0</b> songs</span><span>▤ <b id="tm-stat-lists">0</b> playlists</span><span>♡ <b id="tm-stat-favs">0</b> favorites</span></div>
+              </div>
+              <div class="tm-tools">
+                <span class="tm-bg" id="tm-bg"></span>
+                <select class="tm-select" id="tm-dashboard-source" title="Choose dashboard songs"><option value="all">All Songs</option><option value="favorites">♥ Favorites</option></select>
+                <button type="button" class="tm-btn primary" id="tm-start">▶ Play All</button>
+                <button type="button" class="tm-btn" id="tm-queue-add">＋ Add song</button>
+                <button type="button" class="tm-btn" id="tm-clear-queue">Clear queue</button>
+              </div>
+            </div>
+            <div class="tm-queue" id="tm-queue"></div>
+          </section>
+          <div class="tm-toast" id="tm-toast"></div>
         </div>
-        <div class="music-video-stage" id="music-video-stage" aria-label="Video">
-          <div class="music-youtube-player-wrap" id="music-youtube-wrap"><div id="music-youtube-player"></div></div>
-          <video id="music-video" playsinline preload="metadata"></video>
-        </div>
-        <audio id="music-audio" preload="metadata" hidden></audio>
-        <div class="music-form music-add-panel" id="music-song-form" hidden>
-          <div class="music-form-title">Add to your library</div>
-          <div class="music-import-row">
-            <label class="music-file-picker" for="music-file-input">Add files</label>
-            <input id="music-file-input" type="file" accept="audio/*,video/mp4,video/webm,.mp4,.m4v,.mov" multiple hidden>
-            <label class="music-file-picker" for="music-folder-input">Add folder</label>
-            <input id="music-folder-input" type="file" accept="audio/*,video/mp4,video/webm,.mp4,.m4v,.mov" webkitdirectory multiple hidden>
-          </div>
-          <input id="music-song-url" type="url" placeholder="Paste a YouTube video link" aria-label="YouTube video link">
-          <div class="music-form-actions"><button type="button" data-music-action="cancel-form">Cancel</button><button type="button" id="music-save-song">Add YouTube link</button></div>
-        </div>
-        <section class="music-library" id="music-library" aria-label="Song list">
-          <div class="music-library-heading"><div class="music-library-title">Songs</div><span class="music-queue-summary" id="music-queue-summary" aria-live="polite">0 songs</span></div>
-          <input id="music-search" type="search" placeholder="Search songs" aria-label="Search songs">
-          <div class="music-library-list" id="music-library-list" aria-label="Song library"></div>
-        </section>
-        <div class="music-status" id="music-status" role="status" aria-live="polite"></div>
       </section>
       <section class="notes-panel" id="notes-panel" aria-label="Notes" hidden>
         <div class="notes-composer">
@@ -665,22 +727,137 @@ document.getElementById('splash-screen').hidden = false;
 <input type="file" id="import-file-input" accept="application/json" style="display:none;">
 <div id="toast-stack" aria-live="polite"></div>
 
-<script defer src="js/config.js?v=52"></script>
-<script defer src="js/supabase.js?v=52"></script>
-<script defer src="js/store.js?v=52"></script>
-<script defer src="js/ui.js?v=52"></script>
-<script defer src="js/responsive.js?v=52"></script>
-<script defer src="js/db.js?v=52"></script>
-<script defer src="js/music.js?v=52"></script>
-<script defer src="js/tools.js?v=52"></script>
-<script defer src="js/workspace.js?v=52"></script>
-<script defer src="js/data.js?v=52"></script>
-<script defer src="js/settings.js?v=52"></script>
-<script defer src="js/splash.js?v=52"></script>
-<script defer src="js/books.js?v=52"></script>
-<script defer src="js/events.js?v=52"></script>
-<script defer src="js/auth.js?v=52"></script>
-<script defer src="js/clock.js?v=52"></script>
-<script defer src="app.js?v=52"></script>
+<!-- ============ T MUSIC DIALOGS ============ -->
+<div class="tm-backdrop" id="tm-song-back">
+  <div class="tm-modal">
+    <div class="tm-modal-head"><h2 id="tm-song-modal-title">Add a Song</h2><button type="button" class="tm-close" data-tm-close="tm-song-back" aria-label="Close">×</button></div>
+    <form id="tm-song-form">
+      <label class="tm-field"><span>YOUTUBE VIDEO LINK *</span><input type="url" id="tm-url" required placeholder="Paste YouTube link here"><small id="tm-fetch-hint">The title will be fetched from YouTube automatically when possible.</small></label>
+      <label class="tm-field"><span>SONG TITLE — EDITABLE *</span><input id="tm-title" required placeholder="YouTube title will appear here"></label>
+      <label class="tm-field"><span>ARTIST / CHANNEL</span><input id="tm-artist" placeholder="YouTube channel name (optional)"></label>
+      <label class="tm-field"><span>PLAYLIST</span><select id="tm-song-playlist"></select></label>
+      <input type="hidden" id="tm-edit-id">
+      <div class="tm-modal-actions"><button type="button" class="tm-btn danger hide" id="tm-del-song">Delete</button><button type="button" class="tm-btn" data-tm-close="tm-song-back">Cancel</button><button type="submit" class="tm-btn primary">Save Song</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="tm-backdrop" id="tm-bulk-back">
+  <div class="tm-modal">
+    <div class="tm-modal-head"><h2>Bulk Add Songs</h2><button type="button" class="tm-close" data-tm-close="tm-bulk-back" aria-label="Close">×</button></div>
+    <form id="tm-bulk-form">
+      <label class="tm-field"><span>PASTE LINKS — ONE PER LINE</span><textarea id="tm-bulk-text" placeholder="https://www.youtube.com/watch?v=...&#10;https://youtu.be/..."></textarea><small>Hundreds or thousands at once is fine. Duplicates and invalid links are skipped. Titles load in the background.</small></label>
+      <label class="tm-field"><span>PLAYLIST</span><select id="tm-bulk-playlist"></select></label>
+      <div class="tm-modal-actions"><button type="button" class="tm-btn" data-tm-close="tm-bulk-back">Cancel</button><button type="submit" class="tm-btn primary">Import Links</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="tm-backdrop" id="tm-playlist-back">
+  <div class="tm-modal">
+    <div class="tm-modal-head"><h2>Create Playlist</h2><button type="button" class="tm-close" data-tm-close="tm-playlist-back" aria-label="Close">×</button></div>
+    <form id="tm-playlist-form">
+      <label class="tm-field"><span>PLAYLIST NAME *</span><input id="tm-playlist-name" maxlength="50" required placeholder="e.g. Study Mix"></label>
+      <div class="tm-modal-actions"><button type="button" class="tm-btn" data-tm-close="tm-playlist-back">Cancel</button><button type="submit" class="tm-btn primary">Create Playlist</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="tm-backdrop" id="tm-settings-back">
+  <div class="tm-modal">
+    <div class="tm-modal-head"><h2>Settings &amp; Backups</h2><button type="button" class="tm-close" data-tm-close="tm-settings-back" aria-label="Close">×</button></div>
+    <div class="tm-setting">
+      <b>Color themes</b><p>Choose a palette. The whole player updates instantly and your choice is saved.</p>
+      <div class="tm-palette" id="tm-theme-palette">
+        <button type="button" class="tm-dot" data-tm-theme-choice="silver" title="Silver · Black &amp; White" aria-label="Silver" style="--c1:#202428;--c2:#c7cdd2"><span></span></button>
+        <button type="button" class="tm-dot" data-tm-theme-choice="classic" title="Classic" aria-label="Classic" style="--c1:#6477ee;--c2:#906ce8"><span></span></button>
+        <button type="button" class="tm-dot" data-tm-theme-choice="ocean" title="Ocean teal" aria-label="Ocean" style="--c1:#087eae;--c2:#22c6c8"><span></span></button>
+        <button type="button" class="tm-dot" data-tm-theme-choice="rose" title="Rose" aria-label="Rose" style="--c1:#d14d87;--c2:#9b70e8"><span></span></button>
+        <button type="button" class="tm-dot" data-tm-theme-choice="pink" title="Pink" aria-label="Pink" style="--c1:#d63384;--c2:#ff79b0"><span></span></button>
+        <button type="button" class="tm-dot" data-tm-theme-choice="lavender" title="Lavender" aria-label="Lavender" style="--c1:#8b5cf6;--c2:#c084fc"><span></span></button>
+        <button type="button" class="tm-dot" data-tm-theme-choice="forest" title="Forest" aria-label="Forest" style="--c1:#33845c;--c2:#9bbf4a"><span></span></button>
+        <button type="button" class="tm-dot" data-tm-theme-choice="sunset" title="Sunset" aria-label="Sunset" style="--c1:#d86b36;--c2:#d94b78"><span></span></button>
+        <button type="button" class="tm-dot" data-tm-theme-choice="midnight" title="Midnight dark" aria-label="Midnight" style="--c1:#7f91ff;--c2:#c17bff"><span></span></button>
+      </div>
+      <label class="tm-field"><span>CUSTOM ACCENT COLOR</span><input type="color" id="tm-custom-accent" value="#4b535b" aria-label="Choose custom accent color"></label>
+      <div class="tm-theme-current" id="tm-theme-current">Current: Silver · Black &amp; White</div>
+    </div>
+    <div class="tm-setting"><b>Keyboard shortcuts</b><p>Shortcuts work when you are not typing in a text field.</p>
+      <div class="tm-keys">
+        <span>Play / Pause <kbd>Space</kbd></span><span>Volume <kbd>↑ / ↓</kbd></span><span>Seek 5s <kbd>→ / ←</kbd></span>
+        <span>Mute <kbd>M</kbd></span><span>Next / previous <kbd>N / P</kbd></span><span>Shuffle <kbd>S</kbd></span>
+        <span>Repeat <kbd>R</kbd></span><span>Equalizer <kbd>E</kbd></span><span>Close popup <kbd>Esc</kbd></span>
+      </div>
+    </div>
+    <div class="tm-setting"><b>Automatic backup</b><p id="tm-auto-status">Automatic local snapshots are enabled and saved in this browser.</p><button type="button" class="tm-btn" id="tm-manual-snapshot">Create snapshot now</button></div>
+    <div class="tm-setting"><b>Export library backup</b><p>Save songs, favorites, playlists and queue as a T Music JSON backup.</p><button type="button" class="tm-btn primary" id="tm-export">↥ Export backup</button></div>
+    <div class="tm-setting"><b>Import library backup</b><p>Restore a T Music backup. Existing songs are kept; duplicates by video ID are skipped.</p><button type="button" class="tm-btn" id="tm-import">↧ Import backup</button><input type="file" id="tm-import-file" accept=".json,application/json" hidden></div>
+    <div class="tm-setting"><b>Smart audio fallback (free YouTube API key)</b><p>When a video blocks embedding, T Music finds an embeddable alternate upload of the same song. It also checks links accurately and loads titles fast. Get a key: Google Cloud Console → enable "YouTube Data API v3" → Credentials → Create API key.</p>
+      <label class="tm-field"><input type="password" id="tm-api-key" placeholder="Paste API key" autocomplete="off"></label>
+      <div class="tm-modal-actions"><button type="button" class="tm-btn primary" id="tm-save-key">Save key</button><button type="button" class="tm-btn" id="tm-check-all">✓ Check all songs</button><button type="button" class="tm-btn" id="tm-alt-all">♻ Find alternates</button></div>
+    </div>
+    <div class="tm-setting"><b>Unavailable songs</b><p id="tm-bad-info">Songs YouTube won't play in an embedded player are flagged and skipped automatically.</p>
+      <div class="tm-modal-actions"><button type="button" class="tm-btn" id="tm-retry-bad">⟳ Retry all</button><button type="button" class="tm-btn danger" id="tm-remove-bad">Remove them</button></div>
+    </div>
+    <div class="tm-setting"><b>Playback notes</b><p>Videos whose owners disabled embedding can't be played in any third-party player. T Music flags and skips them. Open Toolify from localhost or a web host (not as a plain file) so YouTube allows playback.</p></div>
+  </div>
+</div>
+
+<div class="tm-backdrop" id="tm-eq-back">
+  <div class="tm-eq-window">
+    <div class="tm-eq-top"><div><h2>Audio Studio</h2><div class="tm-theme-current">Live player controls · tactile equalizer panel</div></div><button type="button" class="tm-close" id="tm-eq-close" aria-label="Close equalizer">×</button></div>
+    <div class="tm-eq-layout">
+      <div class="tm-eq-left">
+        <div class="tm-eq-video-host" id="tm-eq-video-host">
+          <div class="tm-eq-disc" id="tm-eq-disc">
+            <div class="tm-disc">♫</div>
+            <div class="tm-eq-now" id="tm-eq-now">Nothing playing yet</div>
+            <div class="tm-theme-current">NEXT UP</div>
+            <div class="tm-eq-next" id="tm-eq-next">Your next song will appear here</div>
+            <div class="tm-eq-actions">
+              <button type="button" id="tm-eq-prev" aria-label="Previous">|◀</button>
+              <button type="button" class="main" id="tm-eq-play" aria-label="Play or pause">▶</button>
+              <button type="button" id="tm-eq-next-btn" aria-label="Next">▶|</button>
+              <button type="button" id="tm-eq-mute" aria-label="Mute">🔊</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tm-eq-right">
+        <div class="tm-eq-sliders">
+          <div class="tm-eq-band"><b>🔊 Bass</b><input type="range" min="-10" max="10" value="0" data-tm-band="bass" aria-label="Bass tone"><span id="tm-eq-bass-val">0</span></div>
+          <div class="tm-eq-band"><b>✨ Treble</b><input type="range" min="-10" max="10" value="0" data-tm-band="treble" aria-label="Treble tone"><span id="tm-eq-treble-val">0</span></div>
+        </div>
+        <div class="tm-eq-master"><b>Seek through current song</b>
+          <div class="tm-progress-row"><span id="tm-eq-elapsed">0:00</span><input id="tm-eq-progress" type="range" min="0" max="1000" value="0" aria-label="Seek through song"><span id="tm-eq-duration">0:00</span></div>
+          <div class="tm-modal-actions"><button type="button" class="tm-btn" id="tm-eq-back5">⏪ Back 5s</button><button type="button" class="tm-btn" id="tm-eq-forward5">Forward 5s ⏩</button></div>
+        </div>
+        <div class="tm-eq-master"><b>Master volume</b><input id="tm-eq-volume" type="range" min="0" max="100" value="75" aria-label="Master volume"><p class="tm-theme-current">Bass and treble settings are saved as your preferred tone profile. YouTube embeds do not expose raw audio for real bass/treble processing, so those two sliders cannot change the sound of YouTube tracks. Volume, mute, seek bar and playback controls work.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script defer src="js/config.js?v=54"></script>
+<script defer src="js/supabase.js?v=54"></script>
+<script defer src="js/store.js?v=54"></script>
+<script defer src="js/ui.js?v=54"></script>
+<script defer src="js/responsive.js?v=54"></script>
+<script defer src="js/db.js?v=54"></script>
+<script defer src="js/tmusic/core.js?v=54"></script>
+<script defer src="js/tmusic/player.js?v=54"></script>
+<script defer src="js/tmusic/ui.js?v=54"></script>
+<script defer src="js/tmusic/events.js?v=54"></script>
+<script defer src="js/music.js?v=54"></script>
+<script defer src="js/tools.js?v=54"></script>
+<script defer src="js/workspace.js?v=54"></script>
+<script defer src="js/data.js?v=54"></script>
+<script defer src="js/settings.js?v=54"></script>
+<script defer src="js/splash.js?v=54"></script>
+<script defer src="js/books.js?v=54"></script>
+<script defer src="js/events.js?v=54"></script>
+<script defer src="js/auth.js?v=54"></script>
+<script defer src="js/clock.js?v=54"></script>
+<script defer src="app.js?v=54"></script>
 </body>
 </html>

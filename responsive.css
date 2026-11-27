@@ -12,6 +12,7 @@
    7. Small phones (<= 430px / 400px)
    8. Short landscape / low height
    9. Touch input
+   10. Desktop-only gate (phones / small screens)
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -368,4 +369,60 @@ button{touch-action:manipulation;}
   }
   .book-reader:fullscreen .book-reader-header{padding-top:calc(6px + var(--safe-top));}
   .book-reader:fullscreen .book-reader-footer{padding-bottom:calc(8px + var(--safe-bottom));}
+}
+
+/* ------------------------------------------------------------
+    10. DESKTOP-ONLY GATE
+    Shown on touch/mobile devices (class set in index.html) and on
+    any window at or below the mobile-shell breakpoint (860px).
+    It sits above the splash screen and blocks all app interaction.
+    ------------------------------------------------------------ */
+.desktop-only-gate{
+  display:none;
+  position:fixed; inset:0; z-index:10001;
+  align-items:center; justify-content:center;
+  padding:calc(24px + var(--safe-top)) 20px calc(24px + var(--safe-bottom));
+  background:var(--bg); color:var(--text-primary);
+  text-align:center; overflow:hidden;
+  touch-action:none; overscroll-behavior:none;
+  contain:layout paint style;
+}
+html.toolify-mobile-device .desktop-only-gate{display:flex;}
+html.toolify-mobile-device, html.toolify-mobile-device body,
+html.rp-mobile, html.rp-mobile body{overflow:hidden !important;}
+
+@media (max-width:860px){
+  .desktop-only-gate{display:flex;}
+  html, body{overflow:hidden !important;}
+}
+
+.desktop-gate-card{
+  width:min(420px,100%);
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+  padding:32px 26px;
+  border:1px solid var(--border-med);
+  border-radius:var(--radius-xl);
+  background:var(--bg-elev-1);
+  box-shadow:var(--shadow-modal);
+}
+.desktop-gate-icon{
+  width:76px; height:76px; display:grid; place-items:center;
+  border-radius:20px; color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 10%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);
+}
+.desktop-gate-icon svg{width:58px; height:58px;}
+.desktop-gate-brand{
+  font-size:11px; font-weight:800; letter-spacing:.22em;
+  color:var(--accent);
+}
+.desktop-gate-card h1{font-size:20px; line-height:1.25; font-weight:700;}
+.desktop-gate-card p{
+  font-size:13.5px; line-height:1.65; color:var(--text-secondary);
+  overflow-wrap:anywhere;
+}
+@media (max-width:400px){
+  .desktop-gate-card{padding:24px 18px;}
+  .desktop-gate-card h1{font-size:18px;}
+  .desktop-gate-card p{font-size:12.5px;}
 }

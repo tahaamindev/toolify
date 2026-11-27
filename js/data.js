@@ -88,6 +88,17 @@ async function handleImportFile(file){
     let parsed;
     try{ parsed = JSON.parse(text); }
     catch(e){ toast('Import failed — file is not valid JSON', 'error'); return; }
+    /* A T Music library backup drops straight into the music player. */
+    if(parsed && parsed.app === 'T Music'){
+      try{
+        if(!window.TM) throw new Error('Music player is not loaded yet.');
+        const added = TM.importBackup(parsed);
+        toast('T Music backup merged — ' + added + ' new song(s) added.');
+      }catch(error){
+        toast('T Music backup import failed: ' + error.message, 'error');
+      }
+      return;
+    }
     const result = validateBackupPayload(parsed);
     if(!result.valid){
       toast('Import rejected: ' + result.errors[0], 'error');
@@ -198,6 +209,8 @@ async function resetApp(){
   try{
     localStorage.removeItem(musicStorageKey('youtube-api-key'));
     localStorage.removeItem(musicStorageKey('snapshots'));
+    ['echovault-organized-v2','tmusic-auto-backup-v1','tmusic-key','tmusic-theme','tmusic-custom-accent','tmusic-tone-profile']
+      .forEach(key=>localStorage.removeItem(key));
   }catch(error){
     console.error('Could not clear local music data during reset:',error);
     toast('Music player backup data could not be cleared.', 'error');

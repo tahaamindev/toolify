@@ -28,6 +28,15 @@
     root.classList.toggle('rp-short', shortQuery.matches);
     root.classList.toggle('rp-touch', touchQuery.matches);
     updateViewportHeight();
+    focusDesktopGate();
+  }
+
+  /* The desktop-only blocker is an alert dialog; move focus into it when it
+     is on screen so keyboard/screen-reader users land on the message. */
+  function focusDesktopGate(){
+    const gate = document.getElementById('desktop-only-gate');
+    if(!gate || getComputedStyle(gate).display === 'none') return;
+    if(!gate.contains(document.activeElement)) gate.focus({ preventScroll:true });
   }
 
   function updateViewportHeight(){
