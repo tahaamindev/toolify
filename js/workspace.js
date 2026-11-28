@@ -132,3 +132,9 @@ function beginTaskEdit(id){
   input.addEventListener('blur', ()=>finish(true));
 }
 function setTaskFilter(v){ taskFilter = v; }
+
+/* Home-panel notice: jump straight into the updated 3D books viewer. */
+document.getElementById('sidebar-books-open')?.addEventListener('click', () => {
+  setRightPanel('books', true);
+  if(typeof loadBooks === 'function') loadBooks();
+});

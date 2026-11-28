@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://ihlqghvdfunsfdnlaoks.supabase.co" crossorigin>
 <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-<link rel="stylesheet" href="styles.css?v=54">
-<link rel="stylesheet" href="responsive.css?v=54">
-<link rel="stylesheet" href="tmusic.css?v=54">
+<link rel="stylesheet" href="styles.css?v=66">
+<link rel="stylesheet" href="responsive.css?v=66">
+<link rel="stylesheet" href="tmusic.css?v=66">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -246,14 +246,44 @@ document.getElementById('splash-screen').hidden = false;
       </button>
     </nav>
     <div class="quick-tools-panel">
-      <section class="right-home-panel" id="right-home-panel" aria-label="Workspace overview">
-        <div class="music-player-title">Your workspace</div>
-        <div class="music-player-subtitle">A quick look at your Toolify library.</div>
-        <div class="workspace-stats">
-          <div><strong id="workspace-tool-count">0</strong><span>Tools in your library</span></div>
-          <div><strong id="workspace-favorite-count">0</strong><span>Saved favorites</span></div>
-        </div>
-        <div class="workspace-hint">Keep your favorite tools close, and use Notes or Music whenever you need them.</div>
+      <section class="right-home-panel" id="right-home-panel" aria-label="What's new in Toolify">
+        <section class="sidebar-announcement" aria-labelledby="sidebar-announcement-title">
+          <header class="sidebar-announcement-head">
+            <span class="sidebar-announcement-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 4l1.6 4.4L18 10l-4.4 1.6L12 16l-1.6-4.4L6 10l4.4-1.6L12 4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </span>
+            <div class="sidebar-announcement-head-text">
+              <span class="sidebar-announcement-eyebrow">Coming soon · v2.0.0</span>
+              <h2 class="sidebar-announcement-title" id="sidebar-announcement-title">Toolify 2.0.0</h2>
+            </div>
+            <span class="sidebar-announcement-status">Expected</span>
+          </header>
+          <p class="sidebar-announcement-tagline">The Next Evolution of Toolify</p>
+          <p class="sidebar-announcement-summary">Get ready for a whole new Toolify experience, arriving <strong>December 15, 2026</strong>. A <strong>fresh design</strong>, <strong>powerful tools</strong>, <strong>everyday essentials</strong>, and your very own <strong>Personal OS</strong> — all in one place.</p>
+          <ul class="sidebar-announcement-list">
+            <li><strong>A stunning, all-new</strong> user interface</li>
+            <li><strong>Powerful tools</strong> to boost your productivity</li>
+            <li><strong>Essential utilities</strong> for everyday tasks</li>
+            <li>A <strong>smarter, more personalized</strong> OS experience</li>
+            <li><strong>Better performance</strong> and exciting new features</li>
+          </ul>
+          <p class="sidebar-announcement-more"><strong>One Platform. Endless Possibilities.</strong></p>
+          <div class="sidebar-announcement-hero-line">SOMETHING BIGGER IS COMING.</div>
+          <p class="sidebar-announcement-stay">Stay tuned!</p>
+        </section>
+        <section class="sidebar-announcement sidebar-announcement-books" aria-labelledby="sidebar-books-title">
+          <header class="sidebar-announcement-head">
+            <span class="sidebar-announcement-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 6.5C9.8 5 7.2 4.4 4 5v13c3.2-.6 5.8 0 8 1.5 2.2-1.5 4.8-2.1 8-1.5V5c-3.2-.6-5.8 0-8 1.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 6.5v13" stroke="currentColor" stroke-width="1.6"/></svg>
+            </span>
+            <div class="sidebar-announcement-head-text">
+              <span class="sidebar-announcement-eyebrow">New update</span>
+              <h2 class="sidebar-announcement-title" id="sidebar-books-title">Books Viewer 3D</h2>
+            </div>
+          </header>
+          <p class="sidebar-announcement-summary">Check out our new updated books viewer in 3D.</p>
+          <button type="button" class="sidebar-announcement-action" id="sidebar-books-open">Open Books Viewer <span aria-hidden="true">→</span></button>
+        </section>
       </section>
       <section class="music-player" id="music-player" aria-label="Music player" hidden>
         <div class="tm-app" id="tm-app" data-tm-theme="silver">
@@ -838,26 +868,26 @@ document.getElementById('splash-screen').hidden = false;
   </div>
 </div>
 
-<script defer src="js/config.js?v=54"></script>
-<script defer src="js/supabase.js?v=54"></script>
-<script defer src="js/store.js?v=54"></script>
-<script defer src="js/ui.js?v=54"></script>
-<script defer src="js/responsive.js?v=54"></script>
-<script defer src="js/db.js?v=54"></script>
-<script defer src="js/tmusic/core.js?v=54"></script>
-<script defer src="js/tmusic/player.js?v=54"></script>
-<script defer src="js/tmusic/ui.js?v=54"></script>
-<script defer src="js/tmusic/events.js?v=54"></script>
-<script defer src="js/music.js?v=54"></script>
-<script defer src="js/tools.js?v=54"></script>
-<script defer src="js/workspace.js?v=54"></script>
-<script defer src="js/data.js?v=54"></script>
-<script defer src="js/settings.js?v=54"></script>
-<script defer src="js/splash.js?v=54"></script>
-<script defer src="js/books.js?v=54"></script>
-<script defer src="js/events.js?v=54"></script>
-<script defer src="js/auth.js?v=54"></script>
-<script defer src="js/clock.js?v=54"></script>
-<script defer src="app.js?v=54"></script>
+<script defer src="js/config.js?v=66"></script>
+<script defer src="js/supabase.js?v=66"></script>
+<script defer src="js/store.js?v=66"></script>
+<script defer src="js/ui.js?v=66"></script>
+<script defer src="js/responsive.js?v=66"></script>
+<script defer src="js/db.js?v=66"></script>
+<script defer src="js/tmusic/core.js?v=66"></script>
+<script defer src="js/tmusic/player.js?v=66"></script>
+<script defer src="js/tmusic/ui.js?v=66"></script>
+<script defer src="js/tmusic/events.js?v=66"></script>
+<script defer src="js/music.js?v=66"></script>
+<script defer src="js/tools.js?v=66"></script>
+<script defer src="js/workspace.js?v=66"></script>
+<script defer src="js/data.js?v=66"></script>
+<script defer src="js/settings.js?v=66"></script>
+<script defer src="js/splash.js?v=66"></script>
+<script defer src="js/books.js?v=66"></script>
+<script defer src="js/events.js?v=66"></script>
+<script defer src="js/auth.js?v=66"></script>
+<script defer src="js/clock.js?v=66"></script>
+<script defer src="app.js?v=66"></script>
 </body>
 </html>

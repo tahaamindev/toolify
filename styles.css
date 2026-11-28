@@ -196,13 +196,8 @@ a{color:inherit;}
 .quick-tools-panel{
   min-width:0; flex:1; display:flex; flex-direction:column; overflow:hidden; padding:14px 12px;
 }
-.right-home-panel{display:flex; flex-direction:column; gap:14px; padding:2px 2px 0;}
+.right-home-panel{display:flex; flex-direction:column; gap:10px; min-height:0; overflow-y:auto; padding:2px 2px 0; scrollbar-width:thin; scrollbar-color:var(--scrollbar) transparent;}
 .right-home-panel[hidden]{display:none;}
-.workspace-stats{display:grid; gap:8px;}
-.workspace-stats>div{display:flex; flex-direction:column; gap:2px; padding:12px; border:1px solid var(--border-subtle); border-radius:9px; background:var(--bg-elev-2);}
-.workspace-stats strong{font-size:20px; line-height:1.2; color:var(--accent);}
-.workspace-stats span,.workspace-hint{font-size:11px; color:var(--text-tertiary);}
-.workspace-hint{padding:11px 12px; border-left:2px solid var(--accent-strong); border-radius:0 7px 7px 0; background:var(--bg-elev-2); line-height:1.6;}
 .music-player{
   --music-accent:var(--accent); display:flex; min-width:0; min-height:0; flex:1; flex-direction:column; gap:10px;
   overflow-x:hidden; overflow-y:auto; padding:2px; background:var(--bg-elev-1);
@@ -823,6 +818,115 @@ a{color:inherit;}
 .toast.error .toast-icon{color:var(--danger);}
 @keyframes toast-in{from{opacity:0; transform:translateY(8px) scale(.96);} to{opacity:1; transform:translateY(0) scale(1);}}
 @keyframes toast-out{to{opacity:0; transform:translateY(6px) scale(.96);}}
+
+/* ============================================================
+   SIDEBAR ANNOUNCEMENT — compact, understated 2.0.0 notice
+   ============================================================ */
+.sidebar-announcement{
+  position:relative; overflow:hidden;
+  display:flex; flex-direction:column; gap:8px;
+  padding:12px;
+  border:1px solid transparent;
+  border-radius:10px;
+  background:var(--bg-elev-1);
+  animation:sidebar-announcement-shine 5s ease-in-out infinite;
+}
+/* A soft highlight travels around the border in a continuous loop. */
+.sidebar-announcement::before{
+  content:""; position:absolute; left:50%; top:50%;
+  width:190%; height:190%; border-radius:50%; pointer-events:none; z-index:0;
+  background:conic-gradient(from 0deg,
+    transparent 0deg 245deg,
+    color-mix(in srgb,var(--accent) 35%,transparent) 285deg,
+    var(--accent) 320deg,
+    color-mix(in srgb,#fff 70%,var(--accent)) 338deg,
+    transparent 358deg);
+  animation:sidebar-announcement-orbit 5s linear infinite;
+}
+.sidebar-announcement::after{
+  content:""; position:absolute; inset:1px; border-radius:9px;
+  background:var(--bg-elev-1); pointer-events:none; z-index:1;
+}
+.sidebar-announcement > *{position:relative; z-index:2;}
+@keyframes sidebar-announcement-orbit{
+  from{transform:translate(-50%,-50%) rotate(0deg);}
+  to{transform:translate(-50%,-50%) rotate(360deg);}
+}
+@keyframes sidebar-announcement-shine{
+  0%,100%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 8%,transparent), 0 0 8px -3px color-mix(in srgb,var(--accent) 26%,transparent);}
+  50%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent), 0 0 14px -2px color-mix(in srgb,var(--accent) 46%,transparent);}
+}
+.sidebar-announcement-head{display:flex; align-items:center; gap:8px;}
+.sidebar-announcement-badge{
+  flex:0 0 26px; width:26px; height:26px; display:grid; place-items:center;
+  border-radius:7px; color:var(--accent);
+  border:1px solid color-mix(in srgb,var(--accent) 34%,transparent);
+  background:var(--bg-elev-2);
+}
+.sidebar-announcement-badge svg{width:14px; height:14px;}
+.sidebar-announcement-head-text{min-width:0; flex:1;}
+.sidebar-announcement-eyebrow{
+  display:block; font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-tertiary); margin-bottom:1px;
+}
+.sidebar-announcement-title{
+  font-size:13px; font-weight:650; line-height:1.25;
+  color:var(--text-primary);
+}
+.sidebar-announcement-status{
+  flex:0 0 auto; padding:3px 7px; border-radius:5px;
+  border:1px solid var(--border-subtle);
+  color:var(--text-tertiary); font-size:9px; font-weight:600;
+}
+.sidebar-announcement-tagline{
+  font-size:11px; font-weight:650; line-height:1.35;
+  color:var(--text-primary);
+}
+.sidebar-announcement-summary{
+  font-size:10.5px; line-height:1.5; color:var(--text-secondary);
+}
+.sidebar-announcement strong{
+  color:var(--accent); font-weight:700;
+  background:color-mix(in srgb,var(--accent) 10%,transparent);
+  border-radius:3px; padding:0 2px;
+}
+.sidebar-announcement-list{list-style:none; margin:0; padding:0; display:grid; gap:3px;}
+.sidebar-announcement-list li{
+  position:relative; padding-left:12px;
+  font-size:10.5px; line-height:1.4; color:var(--text-secondary);
+}
+.sidebar-announcement-list li::before{
+  content:""; position:absolute; left:1px; top:.55em;
+  width:4px; height:4px; border-radius:50%; background:var(--accent);
+}
+.sidebar-announcement-more{
+  margin-top:1px; padding-top:8px; border-top:1px solid var(--border-subtle);
+  font-size:10px; line-height:1.5; color:var(--text-tertiary);
+}
+.sidebar-announcement-hero-line{
+  margin-top:2px; padding-bottom:6px;
+  border-bottom:2px solid color-mix(in srgb,var(--accent) 55%,transparent);
+  font-size:13px; font-weight:800; letter-spacing:.05em; line-height:1.25;
+  text-transform:uppercase; color:var(--accent);
+}
+.sidebar-announcement-stay{font-size:10px; line-height:1.4; color:var(--text-tertiary);}
+.sidebar-announcement-action{
+  align-self:flex-start;
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  min-height:28px; padding:0 11px;
+  border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);
+  border-radius:6px;
+  background:color-mix(in srgb,var(--accent) 11%,transparent);
+  color:var(--accent); font-size:10.5px; font-weight:700;
+}
+.sidebar-announcement-action:hover{background:color-mix(in srgb,var(--accent) 20%,transparent);}
+.sidebar-announcement-action span{font-size:13px; line-height:1;}
+html[data-theme="light"] .sidebar-announcement::after{background:rgba(255,255,255,.72);}
+html[data-theme="light"] .sidebar-announcement-badge{background:#fff;}
+@media (prefers-reduced-motion:reduce){
+  .sidebar-announcement{animation:none; box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent), 0 0 12px -3px color-mix(in srgb,var(--accent) 34%,transparent);}
+  .sidebar-announcement::before{animation:none; transform:translate(-50%,-50%) rotate(300deg);}
+}
 
 
 /* CLOUD AUTH */
