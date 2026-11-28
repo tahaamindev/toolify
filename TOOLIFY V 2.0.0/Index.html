@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EpicLife OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#151716;height:100vh;height:100dvh;overflow:hidden;font-family:Inter,Arial,sans-serif;color:#e8eeeb}
+#app{position:absolute;width:908px;height:503px;left:50%;top:50%;background:#232625}
+#screen{position:absolute;left:18px;top:12px;width:872px;height:480px;border:1.5px solid #1f6b4d;border-radius:12px;background:radial-gradient(ellipse at 50% 45%,#1c2421,#0b100e 75%);box-shadow:inset 0 0 30px #19805540,0 0 8px #000}
+.a{position:absolute}.t{position:absolute;white-space:nowrap;line-height:1.25}
+.panel{position:absolute;border:1px solid #ffffff2b;border-radius:9px;background:linear-gradient(135deg,#ffffff24,#ffffff0b 40%,#ffffff12);box-shadow:0 5px 14px #0008,inset 0 1px 0 #fff2}
+button,input{font:inherit;color:inherit;border:0;outline:0;background:none}
+button{cursor:pointer}button:hover{filter:brightness(1.25)}
+button:focus-visible,input:focus-visible{outline:1.5px solid #37e6a0}
+svg{display:block;overflow:visible}
+.g{color:#35dc98}
+.row{position:absolute;left:8px;width:256px;height:25px;border-radius:6px;display:flex;align-items:center;font-size:10px;padding-left:6px}
+.row.first{border:1px solid #ffffff40;background:#ffffff14}
+.cb{width:12px;height:12px;border:1.2px solid #9aa5a0;border-radius:2.5px;margin-right:7px;flex:none;font-size:10px;line-height:10px;font-weight:700;color:#fff}
+.cb.on{background:#22b978;border-color:#22b978}
+.row span{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.row.done span{text-decoration:line-through;opacity:.55}
+.tag{width:40px;height:15px;border-radius:9px;font-size:8.5px;line-height:15px;margin-right:5px;flex:none}
+.dot{width:5px;height:5px;border-radius:50%;margin-right:6px;flex:none}
+.High{background:#5c2020;color:#ffb4a8}.Medium{background:#604516;color:#ffd48a}.Low{background:#17492f;color:#8ff0bd}
+.dot.High{background:#f0524a}.dot.Medium{background:#f2a93b}.dot.Low{background:#35dc98}
+.goal{position:absolute;width:124px;height:51px;border:1px solid #ffffff2e;border-radius:7px;background:linear-gradient(135deg,#ffffff1c,#ffffff0a);text-align:left}
+.track{position:absolute;left:6px;top:25px;width:111px;height:4px;border-radius:3px;background:#ffffff26}
+.fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#168e5e,#42f0a8);box-shadow:0 0 5px #35dc98aa;transition:width .3s}
+.ic{position:absolute;width:25px;height:25px;border-radius:50%;border:1px solid #ffffff30;background:#00000050;display:grid;place-items:center}
+.hab{position:absolute;width:13px;height:13px;border-radius:50%;border:1px solid #7d8a8466;padding:0}
+.hab.on{border:1.5px solid #35dc98;background:radial-gradient(circle,#4dffb4 0 3.5px,#0d3325 4.5px);box-shadow:0 0 6px #35dc9899}
+.nav{position:absolute;top:0;width:54px;height:35px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:8px;color:#9ba6a1}
+.nav.on{color:#35dc98}.nav.on::before{content:"";position:absolute;top:0;width:38px;height:2px;background:#35dc98;box-shadow:0 0 6px #35dc98}
+.send{background:linear-gradient(#43efaa,#1fb87a);color:#04150d;font-weight:600;border-radius:14px;box-shadow:0 0 10px #35dc9866}
+.field{background:#ffffff14;border:1px solid #ffffff2b;border-radius:8px;padding:5px 9px;font-size:11px;min-width:0}
+input::placeholder{color:#8c9791}
+#chat{position:absolute;left:8px;top:70px;width:218px;height:162px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;scrollbar-width:none}
+.me,.ai{font-size:9.5px;line-height:13.5px;border-radius:9px;padding:6px 8px;overflow-wrap:anywhere;flex:none}
+.me{align-self:flex-end;max-width:192px;background:#ffffff24}
+.ai{align-self:flex-start;max-width:190px;margin-left:2px;border:1px solid #2fbf85;background:#35dc9814;box-shadow:0 0 9px #35dc9855,inset 0 0 8px #35dc9822}
+.page{position:absolute;left:30px;top:62px;width:812px;height:370px;padding:16px;overflow:auto;font-size:12px}
+.page h2{font-size:17px;margin-bottom:12px}.line{display:flex;gap:10px;align-items:center;padding:7px 10px;border-radius:7px;background:#ffffff10;margin-top:7px}.line span{flex:1;overflow-wrap:anywhere}
+.form{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.form .send{padding:5px 14px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px;text-align:center}.cal button{height:34px;border-radius:6px;background:#ffffff10}.cal .sel{background:#22b978;color:#04150d}.cal .has{border-bottom:2px solid #35dc98}
+input[type=range]{accent-color:#35dc98}
+</style>
+</head>
+<body>
+<div id="app"><div id="screen"></div></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+
+/* ---------- Data ---------- */
+const DEF={name:'Sarah',live:false,
+ tasks:[{t:'Q2 Proposal Draft - High Priority',p:'High',d:true},{t:'Team Sync - 11:00 AM',p:'Medium',d:false},{t:'Review Research Paper',p:'Low',d:false}],
+ goals:[{n:'Career',s:'Senior Promotion',v:65,i:'bag'},{n:'Health',s:'Marathon Training',v:80,i:'run'},{n:'Relationships',s:'Quality Time',v:50,i:'people'},{n:'Financial',s:'Investment Portfolio',v:40,i:'coins'}],
+ habits:[['Meditation','1110100'],['Workout','1110000'],['Read 30 Min','1001000'],['Hydration','1110000'],['Journaling','1100000']].map(([n,d])=>({n,d:[...d].map(Number)})),
+ well:{heart:72,sleep:85,steps:6432},events:{},
+ chat:[['me','What should I focus on this afternoon?'],['ai','Based on your calendar, I recommend blocking 2-4pm for deep work on the Q2 proposal.']]};
+const copy=()=>JSON.parse(JSON.stringify(DEF));
+let D=copy();
+try{Object.assign(D,JSON.parse(localStorage.getItem('epiclife')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('epiclife',JSON.stringify(D))}catch(e){}};
+/* Shuru ka score image jaisa 78% hai, phir aap ke kaam ke mutabiq badalta hai */
+const raw=d=>{const h=d.habits.flatMap(x=>x.d);return (d.tasks.length?d.tasks.filter(x=>x.d).length/d.tasks.length:0)*50+(h.length?h.filter(Boolean).length/h.length:0)*50};
+const score=()=>Math.max(0,Math.min(100,Math.round(78+raw(D)-raw(DEF))));
+
+let page='Dashboard',month=new Date(),day=new Date().toDateString(),rec=null;
+
+/* ---------- Icons ---------- */
+const svg=(body,s=14,w=1.7)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+const I={
+ bag:'<path d="M3 8h18v12H3z" fill="currentColor"/><path d="M8 8V4h8v4"/>',
+ run:'<circle cx="15" cy="4" r="2" fill="currentColor"/><path d="M6 9l5-2 3 3-3 5 4 3v4M11 15l-3 3H3M14 10l3 3h4" stroke-width="2.5"/>',
+ people:'<circle cx="8" cy="8" r="4" fill="currentColor"/><circle cx="17" cy="9" r="3" fill="currentColor"/><path d="M1 20c0-9 14-9 14 0zM15 14c5-2 8 1 8 6h-6z" fill="currentColor"/>',
+ coins:'<ellipse cx="8" cy="5" rx="6" ry="2.5"/><path d="M2 5v10c0 3 12 3 12 0V5M2 10c0 3 12 3 12 0"/><circle cx="17" cy="16" r="5" fill="currentColor"/>',
+ heart:'<path d="M12 21C-6 9 5-2 12 6c7-8 18 3 0 15z" fill="currentColor"/><path d="M4 12h5l2-3 2 6 2-3h5" stroke="#10211a"/>',
+ moon:'<path d="M20 15A9 9 0 119 4a8 8 0 0011 11z" fill="currentColor"/>',
+ steps:'<path d="M5 3c5 0 5 9 2 11H4C1 11 1 3 5 3zM4 17h4c0 5-4 5-4 0zM18 7c5 0 4 8 2 11h-3c-3-2-4-11 1-11zM16 21h4c0 4-4 4-4 0z" fill="currentColor" stroke="none"/>',
+ brain:'<path d="M12 5C10 2 6 3 6 6c-3 0-4 4-2 6-2 3 0 6 3 6 0 3 4 4 5 1zM12 5c2-3 6-2 6 1 3 0 4 4 2 6 2 3 0 6-3 6 0 3-4 4-5 1M12 5v14M6 6c0 2 1 3 3 3M4 12c2-1 4 0 4 2M7 18c0-2 1-3 3-3M18 6c0 2-1 3-3 3M20 12c-2-1-4 0-4 2M17 18c0-2-1-3-3-3"/>',
+ mic:'<rect x="8" y="2" width="8" height="13" rx="4" fill="currentColor"/><path d="M4 11c0 11 16 11 16 0M12 19v3"/>',
+ Dashboard:'<path d="M3 3h8v10H3zM13 3h8v6h-8zM3 15h8v6H3zM13 11h8v10h-8z" fill="currentColor" stroke="none"/>',
+ Calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 2v5M16 2v5M7 14h2M11 14h2M15 14h2M7 17h2M11 17h2"/>',
+ Projects:'<path d="M3 5h6l2 3h10v11H3z"/>',
+ Wellness:'<path d="M12 20C-5 9 5-1 12 6c7-7 17 3 0 14zM4 12h5l2-3 2 6 2-3h5"/>',
+ Settings:'<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'
+};
+
+/* ---------- Helpers ---------- */
+const at=(x,y,w,h)=>`left:${x}px;top:${y}px;${w?`width:${w}px;`:''}${h?`height:${h}px;`:''}`;
+const text=(x,y,v,s,extra='')=>`<div class="t" style="${at(x,y)}font-size:${s}px;${extra}">${v}</div>`;
+const panel=(x,y,w,h,body,cls='panel')=>`<div class="${cls}" style="${at(x,y,w,h)}">${body}</div>`;
+const title=v=>text(9,8,v,12,'font-weight:600');
+
+function ring(){
+ const s=score(),c=2*Math.PI*48;
+ return `<button class="a" data-act="score" style="${at(729,23,106,106)}border-radius:50%" aria-label="Daily score ${s}%">
+ <svg width="106" height="106"><circle cx="53" cy="53" r="48" fill="none" stroke="#1d4435" stroke-width="5"/>
+ <circle cx="53" cy="53" r="48" fill="none" stroke="#48f2ac" stroke-width="5.5" stroke-linecap="round" stroke-dasharray="${c*s/100} ${c}" transform="rotate(-90 53 53)" style="filter:drop-shadow(0 0 6px #35dc98)"/>
+ <circle cx="53" cy="53" r="40" fill="#ffffff10" stroke="#ffffff38"/></svg>
+ <div class="a g" style="left:46px;top:23px">${svg('<path d="M3 17l6-6 4 4 8-9M15 6h6v6"/>',14,2.2)}</div>
+ <div class="t g" style="left:0;width:106px;top:37px;font-size:27px;font-weight:700">${s}%</div>
+ <div class="t" style="left:0;width:106px;top:69px;font-size:10px">Daily Score</div></button>`;
+}
+const spark=(d,dots='')=>`<svg width="86" height="26"><path d="${d} V26 H0Z" fill="#35dc981c"/><path d="${d}" fill="none" stroke="#35dc98" stroke-width="1.3"/>${dots}</svg>`;
+
+/* ---------- Dashboard ---------- */
+function dashboard(){
+ const now=D.live?new Date():new Date(2023,9,26),h=new Date().getHours();
+ const greet=!D.live||h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+ /* Image mein 26 Oct 2023 ko Monday likha hai, wahi rakha hai */
+ const date=D.live?now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}):'Monday, October 26, 2023';
+ let o=text(31,60,`${greet}, <span class="g">${esc(D.name)}.</span>`,24,'font-weight:700;letter-spacing:-.4px')
+ +text(31,91,date,13,'color:#b5beba')+text(31,115,'"The only way to do great work is to love what you do." - Steve Jobs',10,'color:#aab4af')+ring();
+
+ o+=panel(30,155,274,124,title("Today's Priorities")+`<div style="position:absolute;inset:0;overflow:hidden">${D.tasks.slice(0,3).map((t,i)=>`<div class="row ${i?'':'first'} ${t.d&&i?'done':''}" style="top:${29+i*28.5}px"><button class="cb ${t.d?'on':''}" data-act="task" data-i="${i}" role="checkbox" aria-checked="${t.d}" aria-label="${esc(t.t)}">${t.d?'✓':''}</button><span>${esc(t.t)}</span><button class="tag ${t.p}" data-act="pri" data-i="${i}">${t.p}</button><i class="dot ${t.p}"></i></div>`).join('')}</div>`);
+
+ o+=panel(30,291,274,147,title('Vision Board Progress')+D.goals.map((g,i)=>`<button class="goal" data-act="goal" data-i="${i}" title="Click: +5%" style="${at(8+(i%2)*132,30+(i>>1)*57)}"><span class="a g" style="left:6px;top:5px">${svg(I[g.i],15)}</span><span class="t" style="left:26px;top:6px;font-size:10px;font-weight:600">${g.n}</span><span class="t g" style="right:6px;top:6px;font-size:10px">${g.v}%</span><span class="track"><div class="fill" style="width:${g.v}%"></div></span><span class="t" style="left:6px;top:34px;font-size:8.5px">${g.s}</span></button>`).join(''));
+
+ o+=panel(321,155,235,275,`<button class="a g" data-act="insight" aria-label="Marcus AI tip" style="left:85px;top:-23px;width:64px;height:64px;border-radius:50%;border:1px solid #8affd066;background:radial-gradient(circle,#2f6a55,#1d302a);box-shadow:0 0 18px #35dc9866;display:grid;place-items:center">${svg(I.brain,44,1.4)}</button>`
+ +text(0,46,'Marcus AI',12,'width:233px;text-align:center;font-weight:600')
+ +`<div id="chat" aria-live="polite">${D.chat.map(([w,m],i)=>`<div class="${w}" ${i===D.chat.length-1&&w==='ai'?'id="last"':''}>${esc(m)}</div>`).join('')}</div>
+ <button class="ic g" data-act="insight" style="left:200px;top:142px;width:22px;height:22px;${D.chat.length>2?'display:none':''}" aria-label="Tip">${svg(I.brain,15)}</button>
+ <form data-form="chat"><input name="msg" id="msg" autocomplete="off" aria-label="Message" class="a" style="${at(9,240,194,26)}border-radius:14px;background:#ffffff12;border:1px solid #ffffff24;padding:0 62px 0 12px;font-size:10px">
+ <button class="a send" style="${at(153,243,43,20)}font-size:10px">Send</button></form>
+ <button class="a g" data-act="mic" aria-label="Voice input" style="${at(205,243,18,20)}${rec?'color:#ff6b60':''}">${svg(I.mic,16,2)}</button>`);
+
+ const w=D.well;
+ const bars=[5,9,4,11,6,14,5,19,8,16,6,12,18,7,15,20].map((v,i)=>`<rect x="${i*5.4}" y="${26-v}" width="2.6" height="${v}" fill="${i>12?'#55645d':'#35dc98'}"/>`).join('');
+ const rows=[['heart',`Heart Rate: ${w.heart} bpm`,spark('M0 17 C5 8 8 14 12 18 S20 24 24 15 L28 19 L33 7 L37 15 L42 8 L47 17 L53 5 L57 12 L62 4 L68 14 L73 9 L79 13 L86 7')],
+ ['moon',`Sleep Score: ${w.sleep}`,spark('M0 19 C8 14 10 25 18 22 S28 10 36 13 S46 15 54 5 S64 14 70 13 S78 12 84 6',[[36,13],[54,5],[84,6]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2" fill="#0d1d17" stroke="#35dc98"/>`).join(''))],
+ ['steps',`Steps: ${w.steps.toLocaleString('en-US')}`,`<svg width="86" height="26">${bars}</svg>`]];
+ o+=panel(574,155,268,124,title('Wellness Dashboard')+rows.map(([i,l,g],n)=>`<button class="a" data-act="go" data-i="Wellness" style="${at(8,29+n*30.5,252,26)}"><span class="ic g" style="left:0;top:0">${svg(I[i],14)}</span><span class="t" style="left:33px;top:7px;font-size:10px">${l}</span><span class="a" style="left:166px;top:0">${g}</span></button>`).join(''));
+
+ o+=panel(574,291,268,147,title('Weekly Habits')+['M','T','W','T','F','S','S'].map((d,i)=>text(88+i*25.3,30,d,9.5,'width:13px;text-align:center;font-weight:600')).join('')
+ +D.habits.slice(0,5).map((x,r)=>text(9,47+r*19,esc(x.n),9.5)+x.d.map((on,c)=>`<button class="hab ${on?'on':''}" data-act="habit" data-i="${r},${c}" style="${at(88+c*25.3,46.5+r*19)}" aria-label="${esc(x.n)} day ${c+1}" aria-pressed="${!!on}"></button>`).join('')).join(''));
+ return o;
+}
+
+/* ---------- Other pages ---------- */
+const pages={
+ Calendar(){
+  const y=month.getFullYear(),m=month.getMonth(),first=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate(),ev=D.events[day]||[];
+  let c=['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<b>${d}</b>`).join('')+'<i></i>'.repeat(first);
+  for(let i=1;i<=n;i++){const k=new Date(y,m,i).toDateString();c+=`<button data-act="day" data-i="${k}" class="${k===day?'sel':''} ${D.events[k]?.length?'has':''}">${i}</button>`}
+  return `<div style="display:flex;gap:20px"><div style="width:420px"><div class="form" style="justify-content:space-between"><button class="field" data-act="month" data-i="-1">‹</button><b>${month.toLocaleString('en-US',{month:'long',year:'numeric'})}</b><button class="field" data-act="month" data-i="1">›</button></div><div class="cal">${c}</div></div>
+  <div style="flex:1"><h2>${day}</h2><form class="form" data-form="event"><input class="field" name="v" placeholder="Naya event" required><button class="send">Add</button></form>${ev.map((e,i)=>`<div class="line"><span>${esc(e)}</span><button data-act="delEvent" data-i="${i}" aria-label="Delete">✕</button></div>`).join('')||'<p style="margin-top:12px;opacity:.6">Koi event nahi.</p>'}</div></div>`;
+ },
+ Projects(){return `<h2>Projects &amp; Tasks</h2><form class="form" data-form="task"><input class="field" name="v" placeholder="Naya task" required style="width:340px"><select name="p" class="field" aria-label="Priority" style="background:#1b2421;color:#fff"><option>High</option><option selected>Medium</option><option>Low</option></select><button class="send">Add Task</button></form><p style="margin-top:8px;opacity:.6">Pehle 3 tasks Dashboard par dikhte hain.</p>
+ ${D.tasks.map((t,i)=>`<div class="line"><button class="cb ${t.d?'on':''}" data-act="task" data-i="${i}" aria-label="Done">${t.d?'✓':''}</button><span style="${t.d?'text-decoration:line-through;opacity:.55':''}">${esc(t.t)}</span><button class="tag ${t.p}" data-act="pri" data-i="${i}">${t.p}</button><button data-act="top" data-i="${i}" title="Upar le jayein">↑</button><button data-act="delTask" data-i="${i}" aria-label="Delete">✕</button></div>`).join('')}`},
+ Wellness(){return `<h2>Wellness</h2><form data-form="well">${[['heart','Heart Rate (bpm)'],['sleep','Sleep Score'],['steps','Steps']].map(([k,l])=>`<label class="line"><span>${l}</span><input class="field" type="number" min="0" max="${k==='steps'?200000:250}" name="${k}" value="${D.well[k]}" required></label>`).join('')}<button class="send" style="padding:6px 18px;margin:10px 0 18px">Save</button></form><h2>Vision Board</h2>${D.goals.map((g,i)=>`<label class="line"><span>${g.n} — ${g.s}</span><input type="range" data-goal="${i}" value="${g.v}"><b id="gv${i}">${g.v}%</b></label>`).join('')}`},
+ Settings(){return `<h2>Settings</h2><form class="form" data-form="name"><input class="field" name="v" value="${esc(D.name)}" maxlength="18" required aria-label="Name"><button class="send">Naam Save</button></form><div class="line"><span>Date: ${D.live?'Aaj ki (live)':'Image wali'}</span><button class="send" style="padding:5px 12px" data-act="live">Change</button></div><div class="line"><span>Fullscreen</span><button class="send" style="padding:5px 12px" data-act="full">Toggle</button></div><div class="line"><span>Chat history</span><button class="field" data-act="clear">Clear</button></div><div class="line"><span>Sab data reset karein</span><button class="field" data-act="reset">Reset</button></div>`}
+};
+
+/* ---------- Render ---------- */
+function render(){
+ const draft=$('#msg')?.value||'';
+ const logo=`<button class="a" data-act="go" data-i="Dashboard" style="${at(18,13,125,24)}" aria-label="Home"><svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#10271f" stroke="#7ee8bd" stroke-width="1.2"/><path d="M12 3c6 5 4 11 0 12-4-1-6-7 0-12z" fill="#35dc98"/><path d="M2 18l7-6 4 5 3-3 6 5M12 8v12" stroke="#cffbe8" fill="none"/></svg><span class="t" style="left:30px;top:5px;font-size:12px;font-weight:500">EpicLife OS</span></button>`;
+ const nav=`<nav class="panel" style="${at(293,446,288,35)}border-radius:16px 16px 8px 8px">${['Dashboard','Calendar','Projects','Wellness','Settings'].map((n,i)=>`<button class="nav ${page===n?'on':''}" data-act="go" data-i="${n}" style="left:${6+i*54}px">${svg(I[n],14)}${n}</button>`).join('')}</nav>`;
+ $('#screen').innerHTML=logo+(page==='Dashboard'?dashboard():`<div class="page panel">${pages[page]()}</div>`)+nav;
+ const c=$('#chat');if(c){$('#msg').value=draft;const l=$('#last');c.scrollTop=D.chat.length>2?(l?l.offsetTop-c.offsetTop:c.scrollHeight):0}
+}
+
+/* ---------- Assistant (offline, rule based) ---------- */
+function reply(q){
+ q=q.toLowerCase();const open=D.tasks.filter(t=>!t.d),rank={High:0,Medium:1,Low:2},next=[...open].sort((a,b)=>rank[a.p]-rank[b.p])[0],w=D.well;
+ if(/sleep|heart|step|health|wellness/.test(q))return `Heart rate ${w.heart} bpm, sleep score ${w.sleep}, steps ${w.steps}.`;
+ if(/habit/.test(q))return `This week you completed ${D.habits.flatMap(h=>h.d).filter(Boolean).length} habit check-ins.`;
+ if(/score/.test(q))return `Your daily score is ${score()}%. Finish tasks and habits to raise it.`;
+ if(/goal|vision/.test(q))return D.goals.map(g=>`${g.n} ${g.v}%`).join(', ')+'.';
+ if(/task|focus|priority|next|today/.test(q))return next?`Focus on "${next.t}" (${next.p} priority). ${open.length} task(s) left.`:'All tasks are done. Great work!';
+ if(/hi|hello|salam/.test(q))return `Hello ${D.name}! Ask me about tasks, habits, goals or wellness.`;
+ return 'I can help with tasks, habits, goals, wellness and your daily score.';
+}
+const ask=q=>{D.chat.push(['me',q],['ai',reply(q)])};
+
+/* ---------- Events ---------- */
+const A={
+ go:i=>page=i,
+ task:i=>D.tasks[i].d=!D.tasks[i].d,
+ pri:i=>{const p=['High','Medium','Low'];D.tasks[i].p=p[(p.indexOf(D.tasks[i].p)+1)%3]},
+ top:i=>D.tasks.unshift(...D.tasks.splice(i,1)),
+ delTask:i=>D.tasks.splice(i,1),
+ goal:i=>D.goals[i].v=D.goals[i].v>=100?0:Math.min(100,D.goals[i].v+5),
+ habit:i=>{const[r,c]=i.split(',');D.habits[r].d[c]^=1},
+ score:()=>ask('What is my score?'),
+ insight:()=>ask('What should I focus on next?'),
+ month:i=>month=new Date(month.getFullYear(),month.getMonth()+Number(i),1),
+ day:i=>day=i,delEvent:i=>D.events[day].splice(i,1),
+ live:()=>D.live=!D.live,
+ full:()=>{(document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen())?.catch(()=>{})},
+ clear:()=>D.chat=[],
+ reset:()=>{if(confirm('Sara data reset karein?'))D=copy()},
+ mic:()=>{
+  const R=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!R){D.chat.push(['ai','Voice input is not supported in this browser. Try Chrome.']);return}
+  if(rec){rec.stop();return}
+  rec=new R();rec.lang='en-US';
+  rec.onresult=e=>{ask(e.results[0][0].transcript);save()};
+  rec.onerror=()=>D.chat.push(['ai','Mic not available. Please allow microphone access.']);
+  rec.onend=()=>{rec=null;render()};
+  try{rec.start()}catch(e){rec=null}
+ }
+};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;A[b.dataset.act](b.dataset.i);save();render()});
+document.addEventListener('submit',e=>{
+ e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),type=e.target.dataset.form,v=(f.v||f.msg||'').trim();
+ if(type==='well')D.well={heart:+f.heart,sleep:+f.sleep,steps:+f.steps};
+ else{
+  if(!v)return;
+  if(type==='chat'){ask(v);$('#msg').value=''}
+  if(type==='event')(D.events[day]=D.events[day]||[]).push(v);
+  if(type==='task')D.tasks.push({t:v,p:f.p,d:false});
+  if(type==='name')D.name=v;
+ }
+ save();render();if(type==='chat')$('#msg').focus();
+});
+document.addEventListener('input',e=>{const i=e.target.dataset.goal;if(i===undefined)return;D.goals[i].v=+e.target.value;$('#gv'+i).textContent=e.target.value+'%';save()});
+
+function fit(){$('#app').style.transform=`translate(-50%,-50%) scale(${Math.min(innerWidth/908,innerHeight/503)})`}
+addEventListener('resize',fit);fit();render();
+</script>
+</body>
+</html>
